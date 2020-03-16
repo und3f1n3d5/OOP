@@ -61,7 +61,18 @@ public:
             data.push_back(res % 10);
             res /= 10;
         }
+        if (this->data.empty()) this->data.push_back(0);
+        this->zeroCheck();
         reverse(data.begin(), data.end());
+    }
+
+    string toString()
+    {
+        string s = (this->is_positive ? "" : "-" );
+        for(int i : this->data)
+            s += (to_string(i + '0') );
+        if(this->data.empty()) s += '0';
+        return s;
     }
 
     BigInt operator+(const BigInt &right) const;
@@ -321,12 +332,12 @@ BigInt &BigInt::operator*=(const BigInt &right) {
         *this = BigInt(to_string(this->data[0] * right.data[0]));
         return *this;
     }
-    if (this->data.empty() || right.data.empty()) {
+    if (this->data.empty() || right.data.empty() || *this == 0 || right == 0) {
         *this = 0;
         return *this;
     }
     this->is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
-    BigInt A0("0"), B0("0");
+    BigInt A0(0), B0(0);
     for (size_t i=0; i < this->data.size() / 2; ++i){
         A0.data.push_back(this->data[i]);
     }
@@ -355,6 +366,7 @@ BigInt &BigInt::operator*=(const BigInt &right) {
         C0.data.push_back(0);
     }
     *this = A1 * B1 + C0 + C1;
+    this->zeroCheck();
     return *this;
 }
 
@@ -391,6 +403,7 @@ BigInt &BigInt::operator/=(const BigInt &right) {
 }
 
 
+
 BigInt BigInt::operator%(const BigInt &right) const {
     BigInt res = *this;
     res %= right;
@@ -405,6 +418,7 @@ BigInt &BigInt::operator%=(const BigInt &right) {
         res = res + right;
     }
     this->is_positive = true;
+    this->zeroCheck();
     return *this;
 }
 
