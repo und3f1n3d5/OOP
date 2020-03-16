@@ -155,22 +155,7 @@ public:
 
 BigInt BigInt::operator+(const BigInt &r) const{
     BigInt result;
-    if (this->is_positive && r.is_positive) {
-        result = Plus(abs1(*this), abs1(r));
-        result.is_positive = true;
-    }
-    if (!this->is_positive && !r.is_positive){
-        result = Plus(abs1(*this), abs1(r));
-        result.is_positive = false;
-    }
-    if (this->is_positive && !r.is_positive){
-        result = Minus(abs1(*this), abs1(r));
-        result.is_positive = (abs1(r) > *this);
-    }
-    if (!this->is_positive && r.is_positive){
-        result = Minus(abs1(*this), abs1(r));
-        result.is_positive = (abs1(*this) > r);
-    }
+    result += r;
     return result;
 }
 
@@ -200,32 +185,43 @@ BigInt BigInt::operator+() const{
 
 BigInt BigInt::operator-(const BigInt &r) const{
     BigInt result;
-    if (this->is_positive && r.is_positive) {
-        result = Minus(abs1(*this), abs1(r));
-        result.is_positive = (*this > r);
-    }
-    if (!this->is_positive && !r.is_positive){
-        result = Minus(abs1(*this), abs1(r));
-        result.is_positive = (*this > r);
-    }
-    if (this->is_positive && !r.is_positive){
-        result = Plus(abs1(*this), abs1(r));
-        result.is_positive = true;
-    }
-    if (!this->is_positive && r.is_positive){
-        result = Plus(abs1(*this), abs1(r));
-        result.is_positive = false;
-    }
+    result -= r;
     return result;
 }
 
 BigInt &BigInt::operator+=(const BigInt &right) {
-    *this = *this + right;
+    if (this->is_positive && right.is_positive) {
+        *this = Plus(abs1(*this), abs1(right));
+        this->is_positive = true;
+    }
+    if (!this->is_positive && !right.is_positive){
+        *this = Plus(abs1(*this), abs1(right));
+        this->is_positive = false;
+    }
+    if (this->is_positive && !right.is_positive){
+        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = (abs1(right) > *this);
+    }
+    if (!this->is_positive && right.is_positive){
+        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = (abs1(*this) > right);
+    }
     return *this;
 }
 
 BigInt &BigInt::operator-=(const BigInt &right) {
-    *this = *this - right;
+    if (this->is_positive == right.is_positive) {
+        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = (*this > right);
+    }
+    else if (this->is_positive && !right.is_positive){
+        *this = Plus(abs1(*this), abs1(right));
+        this->is_positive = true;
+    }
+    else if (!this->is_positive && right.is_positive){
+        *this = Plus(abs1(*this), abs1(right));
+        this->is_positive = false;
+    }
     return *this;
 }
 
@@ -239,6 +235,7 @@ BigInt &BigInt::operator=(const BigInt &right) {
 
 BigInt BigInt::operator-() {
     this->is_positive = !this->is_positive;
+    this->zeroCheck();
     return *this;
 }
 
@@ -288,6 +285,7 @@ BigInt BigInt::operator++() {
 const BigInt BigInt::operator++(int){
     BigInt oldValue = *this;
     *this += BigInt("1");
+    this->zeroCheck();
     return oldValue;
 }
 
@@ -298,6 +296,7 @@ BigInt BigInt::operator--() {
 const BigInt BigInt::operator--(int) {
     BigInt oldValue = *this;
     *this -= BigInt("1");
+    this->zeroCheck();
     return oldValue;
 }
 
@@ -306,13 +305,19 @@ BigInt BigInt::operator/(const BigInt &right) const{
 }
 
 BigInt BigInt::operator*(const BigInt &right) const{
+
+}
+
+BigInt &BigInt::operator*=(const BigInt &right) {
     if (this->data.size() == 1 && right.data.size() == 1){
-        return BigInt(to_string(this->data[0] * right.data[0]));
+        *this = BigInt(to_string(this->data[0] * right.data[0]));
+        return *this;
     }
-    if (this->data.empty() or right.data.empty())
-        return 0;
-    BigInt res;
-    res.is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
+    if (this->data.empty() || right.data.empty()) {
+        *this = 0;
+        return *this;
+    }
+    this->is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
     BigInt A0("0"), B0("0");
     for (size_t i=0; i < this->data.size() / 2; ++i){
         A0.data.push_back(this->data[i]);
@@ -341,12 +346,8 @@ BigInt BigInt::operator*(const BigInt &right) const{
         C1.data.push_back(0);
         C0.data.push_back(0);
     }
-    res = A1 * B1 + C0 + C1;
-    return res;
-}
-
-BigInt &BigInt::operator*=(const BigInt &right) {
-
+    *this = A1 * B1 + C0 + C1;
+    return *this;
 }
 
 BigInt &BigInt::operator/=(const BigInt &right) {
