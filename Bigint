@@ -13,6 +13,29 @@ private:
 
     bool is_positive = true;
 
+    void zeroCheck() {
+        int zeros = 0;
+        bool is_zero = true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (data[i] == 0) ++zeros;
+            else {
+                is_zero = false;
+                break;
+            }
+        }
+        if (is_zero) {
+            this->data.resize(1, 0);
+            this->is_positive = true;
+        }
+        else if (zeros){
+            vector <int> new_data;
+            for (int i=zeros; i < this->data.size(); ++i){
+                new_data.push_back(this->data[i]);
+            }
+            this->data = new_data;
+        }
+    }
+
 public:
     BigInt() = default;
 
@@ -303,22 +326,26 @@ BigInt BigInt::operator*(const BigInt &right) const{
     for (size_t i=right.data.size() / 2; i < right.data.size(); ++i){
         B1.data.push_back(right.data[i]);
     }
-    BigInt C0 = A1 * B1, C1 = A0 * B1, C2 = A1 * B0;
+    BigInt C0 = A0 * B0, C1 = A0 * B1, C2 = A1 * B0;
     size_t m1 = this->data.size() / 2, m2 = right.data.size() / 2;
     for (size_t i=0; i < m2; ++i){
-        C1.data.push_back(0);
-        C0.data.push_back(0);
-    }
-    for (size_t i=0; i < m1; ++i){
         C2.data.push_back(0);
         C0.data.push_back(0);
     }
-    res = A0 * B0 + C0 + C1;
+    for (size_t i=0; i < m1; ++i){
+        C1.data.push_back(0);
+        C0.data.push_back(0);
+    }
+    res = A1 * B1 + C0 + C1;
     return res;
 }
 
 BigInt &BigInt::operator*=(const BigInt &right) {
 
+}
+
+BigInt &BigInt::operator/=(const BigInt &right) {
+    
 }
 
 
