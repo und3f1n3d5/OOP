@@ -11,7 +11,7 @@ class BigInt {
 private:
     vector<int> data;
 
-    bool sign = true;
+    bool is_positive = true;
 
 public:
     BigInt() = default;
@@ -21,17 +21,17 @@ public:
 
     explicit BigInt(const string &s) {
         int res = 0, k = 0;
-        sign = (s[0] == '-');
+        is_positive = (s[0] == '-');
         for (auto i : s) {
             if (i == '-') continue;
             data.push_back((int) i - '0');
         }
-        if (data[0] == 0) sign = true;
+        if (data[0] == 0) is_positive = true;
         data.push_back(res);
     }
 
     BigInt(const int &i){
-        sign = (i >= 0);
+        is_positive = (i >= 0);
         int res = abs(i);
         while (abs(i) > 0){
             data.push_back(res % 10);
@@ -125,7 +125,7 @@ public:
 
     static BigInt abs1(const BigInt& a){
         BigInt res = a;
-        res.sign = true;
+        res.is_positive = true;
         return res;
     }
 };
@@ -133,21 +133,21 @@ public:
 
 BigInt BigInt::operator+(const BigInt &r) const{
     BigInt result;
-    if (this->sign && r.sign) {
+    if (this->is_positive && r.is_positive) {
         result = Plus(abs1(*this), abs1(r));
-        result.sign = true;
+        result.is_positive = true;
     }
-    if (!this->sign && !r.sign){
+    if (!this->is_positive && !r.is_positive){
         result = Plus(abs1(*this), abs1(r));
-        result.sign = false;
+        result.is_positive = false;
     }
-    if (this->sign && !r.sign){
+    if (this->is_positive && !r.is_positive){
         result = Minus(abs1(*this), abs1(r));
-        result.sign = (abs1(r) > *this);
+        result.is_positive = (abs1(r) > *this);
     }
-    if (!this->sign && r.sign){
+    if (!this->is_positive && r.is_positive){
         result = Minus(abs1(*this), abs1(r));
-        result.sign = (abs1(*this) > r);
+        result.is_positive = (abs1(*this) > r);
     }
     return result;
 }
@@ -164,7 +164,7 @@ istream& operator >> (std::istream &in, BigInt &a)
 ostream& operator << (std::ostream &os, const BigInt &a)
 {
     string s;
-    if (!a.sign) s = '-';
+    if (!a.is_positive) s = '-';
     for (int i : a.data){
         s += to_string(i);
     }
@@ -178,21 +178,21 @@ BigInt BigInt::operator+() const{
 
 BigInt BigInt::operator-(const BigInt &r) const{
     BigInt result;
-    if (this->sign && r.sign) {
+    if (this->is_positive && r.is_positive) {
         result = Minus(abs1(*this), abs1(r));
-        result.sign = (*this > r);
+        result.is_positive = (*this > r);
     }
-    if (!this->sign && !r.sign){
+    if (!this->is_positive && !r.is_positive){
         result = Minus(abs1(*this), abs1(r));
-        result.sign = (*this > r);
+        result.is_positive = (*this > r);
     }
-    if (this->sign && !r.sign){
+    if (this->is_positive && !r.is_positive){
         result = Plus(abs1(*this), abs1(r));
-        result.sign = true;
+        result.is_positive = true;
     }
-    if (!this->sign && r.sign){
+    if (!this->is_positive && r.is_positive){
         result = Plus(abs1(*this), abs1(r));
-        result.sign = false;
+        result.is_positive = false;
     }
     return result;
 }
@@ -216,7 +216,7 @@ BigInt &BigInt::operator=(const BigInt &right) {
 }
 
 BigInt BigInt::operator-() {
-    this->sign = !this->sign;
+    this->is_positive = !this->is_positive;
     return *this;
 }
 
@@ -225,8 +225,8 @@ bool BigInt::operator==(const BigInt &right) const{
 }
 
 bool BigInt::operator>(const BigInt &right) const{
-    if (this->sign){
-        if (!right.sign) return true;
+    if (this->is_positive){
+        if (!right.is_positive) return true;
         if (right.data.size() > this->data.size()) return false;
         if (this->data.size() < right.data.size()) return true;
         for (size_t i=0; i < this->data.size(); ++i){
@@ -236,7 +236,7 @@ bool BigInt::operator>(const BigInt &right) const{
         return false;
     }
     else{
-        if (!right.sign) return false;
+        if (!right.is_positive) return false;
         if (right.data.size() < this->data.size()) return false;
         if (this->data.size() > right.data.size()) return true;
         for (size_t i=0; i < this->data.size(); ++i){
@@ -288,7 +288,7 @@ BigInt BigInt::operator*(const BigInt &right) const{
         return BigInt(to_string(this->data[0] * right.data[0]));
     }
     BigInt res;
-    res.sign = (this->sign && right.sign) || (!this->sign && !right.sign);
+    res.is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
     BigInt A0("0"), B0("0");
     for (size_t i=0; i < this->data.size() / 2; ++i){
         A0.data.push_back(this->data[i]);
@@ -326,5 +326,5 @@ int main()
 {
     BigInt a, b;
     cin >> a >> b;
-    cout << a + b;
+    cout << a * b;
 }
