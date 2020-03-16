@@ -13,6 +13,8 @@ private:
 
     bool is_positive = true;
 
+    class DivideByZero: exception {};
+
     void zeroCheck() {
         int zeros = 0;
         bool is_zero = true;
@@ -66,11 +68,13 @@ public:
     BigInt operator-(const BigInt &right) const;
     BigInt operator*(const BigInt &right) const;
     BigInt operator/(const BigInt &right) const;
+    BigInt operator%(const BigInt &right) const;
 
     BigInt &operator+=(const BigInt &right);
     BigInt &operator-=(const BigInt &right);
     BigInt &operator*=(const BigInt &right);
     BigInt &operator/=(const BigInt &right);
+    BigInt &operator%=(const BigInt &right);
 
     bool operator==(const BigInt &right) const;
     bool operator>=(const BigInt &right) const;
@@ -301,11 +305,15 @@ const BigInt BigInt::operator--(int) {
 }
 
 BigInt BigInt::operator/(const BigInt &right) const{
-
+    BigInt res = *this;
+    res /= right;
+    return res;
 }
 
 BigInt BigInt::operator*(const BigInt &right) const{
-
+    BigInt res = *this;
+    res *= right;
+    return res;
 }
 
 BigInt &BigInt::operator*=(const BigInt &right) {
@@ -351,7 +359,53 @@ BigInt &BigInt::operator*=(const BigInt &right) {
 }
 
 BigInt &BigInt::operator/=(const BigInt &right) {
+    if (right == 0) {
+        throw BigInt::DivideByZero();
+    }
+    this->is_positive = (this->is_positive && right.is_positive) or (!this->is_positive && !right.is_positive);
+    BigInt res;
+    BigInt curValue;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        for (size_t j = i; j < min(this->data.size(), right.data.size() + i); ++j) {
+            if (curValue < right.data.size()) curValue.data.push_back(this->data[i]);
+            else break;
+        }
+        int mid = 0;
+        int lBorder = 0;
+        int rBorder = Base;
+        while (lBorder <= rBorder) {
+            mid = (lBorder + rBorder) / 2;
+            BigInt cur = right * mid;
+            if (cur <= curValue) {
+                lBorder = mid + 1;
+            } else {
+                rBorder = mid - 1;
+            }
+        }
+        res.data[i] = mid;
+        curValue -= right * mid;
+    }
+    res.zeroCheck();
+    *this = res;
+    return *this;
+}
 
+
+BigInt BigInt::operator%(const BigInt &right) const {
+    BigInt res = *this;
+    res %= right;
+    return res;
+}
+
+
+BigInt &BigInt::operator%=(const BigInt &right) {
+    BigInt res;
+    *this = *this - (*this / right) * right;
+    if (!this->is_positive) {
+        res = res + right;
+    }
+    this->is_positive = true;
+    return *this;
 }
 
 
