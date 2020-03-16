@@ -1,0 +1,317 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+const int Base = 1000;
+
+class BigInt {
+public:
+    BigInt() = default;
+
+    BigInt &operator=(const BigInt &right);
+
+    vector<int> data;
+
+    bool sign = true;
+
+    explicit BigInt(const string &s) {
+        int res = 0, k = 0;
+        sign = (s[0] == '-');
+        for (auto i : s) {
+            if (i == '-') continue;
+            if (res * 10 + (int) i < Base)
+                res = res * 10 + (int) i;
+            else {
+                data.push_back(res);
+                res = (int) i;
+            }
+        }
+        if (data[0] == 0) sign = true;
+        data.push_back(res);
+    }
+
+    BigInt operator+(const BigInt &right) const;
+    BigInt operator-(const BigInt &right) const;
+    BigInt operator*(const BigInt &right) const;
+    BigInt operator/(const BigInt &right) const;
+
+    BigInt &operator+=(const BigInt &right);
+    BigInt &operator-=(const BigInt &right);
+    BigInt &operator*=(const BigInt &right);
+    BigInt &operator/=(const BigInt &right);
+
+    bool operator==(const BigInt &right) const;
+    bool operator>=(const BigInt &right) const;
+    bool operator<=(const BigInt &right) const;
+    bool operator<(const BigInt &right) const;
+    bool operator>(const BigInt &right) const;
+
+    const BigInt operator--(int);
+    BigInt operator--();
+    const BigInt operator++(int);
+    BigInt operator++();
+
+    BigInt operator-();
+    BigInt operator+() const;
+
+    istream &operator>>(istream &in);
+    ostream &operator<<(ostream &os);
+
+    static BigInt Plus(const BigInt& a, const BigInt& b) {
+        BigInt result, left, right;
+        if (a > b) {
+            left = b;
+            right = a;
+        }
+        else {
+            left = a;
+            right = b;
+        }
+        result.data.resize(max(left.data.size(), right.data.size()));
+        int k = 0;
+        size_t i;
+        for (i = 0; i < left.data.size(); ++i) {
+            result.data[result.data.size() - i - 1] =
+                    (left.data[left.data.size() - i - 1] + right.data[right.data.size() - i - 1] + k) % Base;
+            k = (left.data[left.data.size() - i - 1] + right.data[right.data.size() - i - 1] + k) / Base;
+        }
+        while (i < result.data.size()) {
+            result.data[result.data.size() - i - 1] = (right.data[right.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] + k) / Base;
+            ++i;
+        }
+        if (k > 0)
+            result.data.insert(result.data.begin(), k);
+        return result;
+    }
+
+    static BigInt Minus(const BigInt& a, const BigInt& b) {
+        BigInt result, left, right;
+        if (a > b) {
+            left = b;
+            right = a;
+        }
+        else {
+            left = a;
+            right = b;
+        }
+        result.data.resize(right.data.size());
+        int k = 0;
+        size_t i;
+        for (i = 0; i < left.data.size(); ++i) {
+            result.data[result.data.size() - i - 1] =
+                    abs(right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) / Base;
+        }
+        while (i < result.data.size()) {
+            result.data[result.data.size() - i - 1] = abs(right.data[right.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] + k) / Base;
+            ++i;
+        }
+        if (k > 0)
+            result.data.insert(result.data.begin(), abs(k));
+        return result;
+    }
+
+};
+
+BigInt abs1(const BigInt& a){
+    BigInt res = a;
+    res.sign = true;
+    return res;
+}
+
+
+BigInt BigInt::operator+(const BigInt &r) const{
+    BigInt result;
+    if (this->sign && r.sign) {
+        result = Plus(abs1(*this), abs1(r));
+        result.sign = true;
+    }
+    if (!this->sign && !r.sign){
+        result = Plus(abs1(*this), abs1(r));
+        result.sign = false;
+    }
+    if (this->sign && !r.sign){
+        result = Minus(abs1(*this), abs1(r));
+        result.sign = (abs1(r) > *this);
+    }
+    if (!this->sign && r.sign){
+        result = Minus(abs1(*this), abs1(r));
+        result.sign = (abs1(*this) > r);
+    }
+    return result;
+}
+
+
+istream& BigInt::operator >> (std::istream& in)
+{
+    string s;
+    in >> s;
+    *this = BigInt(s);
+    return in;
+}
+
+ostream& BigInt::operator << (std::ostream &os)
+{
+    string s;
+    if (!this->sign) s = '-';
+    for (int i : this->data){
+        s += to_string(i);
+    }
+    return os << s;
+}
+
+BigInt BigInt::operator+() const{
+    return *this;
+}
+
+
+BigInt BigInt::operator-(const BigInt &r) const{
+    BigInt result;
+    if (this->sign && r.sign) {
+        result = Minus(abs1(*this), abs1(r));
+        result.sign = (*this > r);
+    }
+    if (!this->sign && !r.sign){
+        result = Minus(abs1(*this), abs1(r));
+        result.sign = (*this > r);
+    }
+    if (this->sign && !r.sign){
+        result = Plus(abs1(*this), abs1(r));
+        result.sign = true;
+    }
+    if (!this->sign && r.sign){
+        result = Plus(abs1(*this), abs1(r));
+        result.sign = false;
+    }
+    return result;
+}
+
+BigInt &BigInt::operator+=(const BigInt &right) {
+    *this = *this + right;
+    return *this;
+}
+
+BigInt &BigInt::operator-=(const BigInt &right) {
+    *this = *this - right;
+    return *this;
+}
+
+BigInt &BigInt::operator=(const BigInt &right) {
+    if (this == &right) {
+        return *this;
+    }
+    data = right.data;
+    return *this;
+}
+
+BigInt BigInt::operator-() {
+    this->sign = !this->sign;
+    return *this;
+}
+
+bool BigInt::operator==(const BigInt &right) const{
+    return !(*this > right) && !(*this < right);
+}
+
+bool BigInt::operator>(const BigInt &right) const{
+    if (this->sign){
+        if (!right.sign) return true;
+        if (right.data.size() > this->data.size()) return false;
+        if (this->data.size() < right.data.size()) return true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (this->data[i] < right.data[i]) return false;
+            if (this->data[i] > right.data[i]) return true;
+        }
+        return false;
+    }
+    else{
+        if (!right.sign) return false;
+        if (right.data.size() < this->data.size()) return false;
+        if (this->data.size() > right.data.size()) return true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (this->data[i] > right.data[i]) return false;
+            if (this->data[i] < right.data[i]) return true;
+        }
+        return false;
+    }
+}
+
+bool BigInt::operator<(const BigInt &right) const{
+    return right > *this;
+}
+
+bool BigInt::operator<=(const BigInt &right) const{
+    return *this < right || *this == right;
+}
+
+bool BigInt::operator>=(const BigInt &right) const{
+    return *this == right || *this > right;
+}
+
+BigInt BigInt::operator++() {
+    return *this + BigInt("1");
+}
+
+const BigInt BigInt::operator++(int){
+    BigInt oldValue = *this;
+    *this += BigInt("1");
+    return oldValue;
+}
+
+BigInt BigInt::operator--() {
+    return *this - BigInt("1");
+}
+
+const BigInt BigInt::operator--(int) {
+    BigInt oldValue = *this;
+    *this -= BigInt("1");
+    return oldValue;
+}
+
+BigInt BigInt::operator/(const BigInt &right) const{
+
+}
+
+BigInt BigInt::operator*(const BigInt &right) const{
+    if (this->data.size() == 1 && right.data.size() == 1){
+        return BigInt(to_string(this->data[0] * right.data[0]));
+    }
+    BigInt res;
+    res.sign = (this->sign && right.sign) || (!this->sign && !right.sign);
+    BigInt A0("0"), B0("0");
+    for (size_t i=0; i < this->data.size() / 2; ++i){
+        A0.data.push_back(this->data[i]);
+    }
+    for (size_t i=0; i < right.data.size() / 2; ++i){
+        B0.data.push_back(right.data[i]);
+    }
+    BigInt A1, B1;
+    for (size_t i=this->data.size() / 2; i < this->data.size(); ++i){
+        A1.data.push_back(this->data[i]);
+    }
+    for (size_t i=right.data.size() / 2; i < right.data.size(); ++i){
+        B1.data.push_back(right.data[i]);
+    }
+    BigInt C0 = A1 * B1, C1 = A0 * B1, C2 = A1 * B0;
+    size_t m1 = this->data.size() / 2, m2 = right.data.size() / 2;
+    for (size_t i=0; i < m2; ++i){
+        C1.data.push_back(0);
+        C0.data.push_back(0);
+    }
+    for (size_t i=0; i < m1; ++i){
+        C2.data.push_back(0);
+        C0.data.push_back(0);
+    }
+    res = A0 * B0 + C0 + C1;
+    return res;
+}
+
+
+int main()
+{
+    return 0;
+}
