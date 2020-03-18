@@ -125,7 +125,7 @@ public:
         zeroCheck();
     }
 
-    BigInt(const int &i){
+    BigInt(const int &i) {
         is_positive = (i >= 0);
         int res = abs(i);
         while (res > 0){
@@ -137,8 +137,11 @@ public:
         reverse(data.begin(), data.end());
     }
 
-    string toString()
-    {
+    explicit operator bool () const {
+        return !(*this == 0);
+    }
+
+    string const toString() {
         string s = (this->is_positive ? "" : "-" );
         for(int i : this->data)
             s += (to_string(i + '0') );
@@ -173,13 +176,12 @@ public:
     BigInt operator+() const;
 
     //istream &operator>>(istream &in);
-    friend ostream &operator<<(ostream &os, const BigInt &a);
+    ostream &operator<<(ostream &os);
 };
 
 
 BigInt BigInt::operator+(const BigInt &r) const{
-    BigInt result;
-    result = *this;
+    BigInt result = *this;
     result += r;
     return result;
 }
@@ -193,14 +195,9 @@ istream& operator >> (std::istream &in, BigInt &a)
     return in;
 }
 
-ostream& operator << (std::ostream &os, const BigInt &a)
+ostream& BigInt::operator << (std::ostream &os)
 {
-    string s;
-    if (!a.is_positive) s = '-';
-    for (int i : a.data){
-        s += to_string(i);
-    }
-    return os << s;
+    return os << this->toString();
 }
 
 BigInt BigInt::operator+() const{
@@ -209,7 +206,7 @@ BigInt BigInt::operator+() const{
 
 
 BigInt BigInt::operator-(const BigInt &r) const{
-    BigInt result;
+    BigInt result = *this;
     result -= r;
     return result;
 }
@@ -437,7 +434,7 @@ BigInt BigInt::operator%(const BigInt &right) const {
 
 BigInt &BigInt::operator%=(const BigInt &right) {
     BigInt res;
-    *this = *this - (*this / right) * right;
+    *this -= (*this / right) * right;
     if (!this->is_positive) {
         res = res + right;
     }
@@ -451,5 +448,5 @@ int main()
 {
     BigInt a, b;
     cin >> a >> b;
-    cout << a / b;
+    cout << a % b;
 }
