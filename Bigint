@@ -141,7 +141,7 @@ public:
         return !(*this == 0);
     }
 
-    string const toString() {
+    string toString() const {
         string s = (this->is_positive ? "" : "-" );
         for(int i : this->data)
             s += (to_string(i + '0') );
@@ -176,7 +176,7 @@ public:
     BigInt operator+() const;
 
     //istream &operator>>(istream &in);
-    ostream &operator<<(ostream &os);
+    //ostream &operator<<(ostream &os);
 };
 
 
@@ -195,9 +195,9 @@ istream& operator >> (std::istream &in, BigInt &a)
     return in;
 }
 
-ostream& BigInt::operator << (std::ostream &os)
+ostream& operator << (std::ostream &os, const BigInt &a)
 {
-    return os << this->toString();
+    return os << a.toString();
 }
 
 BigInt BigInt::operator+() const{
