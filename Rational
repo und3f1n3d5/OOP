@@ -1,1 +1,245 @@
+#include <iostream>
+#include <vector>
+#include <string>
 
+using namespace std;
+
+const int Base = 10;
+
+class Rational {
+private:
+
+    int nominator=0, denominator=1;
+
+    class DivideByZero: exception {};
+
+    static void reduce(Rational &r) {
+        vector <int> dev;
+        for (int i = 2; i < r.nominator; ) {
+            if (r.nominator % i == 0 && r.denominator % i == 0){
+                r.nominator /= i;
+                r.denominator /= i;
+            }
+            else{
+                ++i;
+            }
+        }
+    }
+
+    static void Check(Rational &r) {
+        if (r.denominator < 0){
+            r.nominator *= -1;
+            r.denominator *= -1;
+        }
+        if (r.nominator == 0) r.denominator = 1;
+        reduce(r);
+    }
+
+public:
+    Rational() = default;
+
+    Rational &operator=(const Rational &right);
+
+    explicit Rational(const int &p, const int &q) {
+        nominator = p;
+        denominator = q;
+        if (q == 0)
+            throw DivideByZero();
+        Check(*this);
+    }
+
+    Rational(const int &i) {
+        nominator = i;
+        denominator = 1;
+    }
+
+    explicit operator bool () const {
+        return !(*this == 0);
+    }
+
+    string toString() const {
+        if (this->denominator == 1)
+            return to_string(this->nominator);
+        string s =  to_string(this->nominator) + '/' + to_string(this->denominator);
+        return s;
+    }
+
+    Rational operator+(const Rational &right) const;
+    Rational operator-(const Rational &right) const;
+    Rational operator*(const Rational &right) const;
+    Rational operator/(const Rational &right) const;
+
+    Rational &operator+=(const Rational &right);
+    Rational &operator-=(const Rational &right);
+    Rational &operator*=(const Rational &right);
+    Rational &operator/=(const Rational &right);
+
+    bool operator==(const Rational &right) const;
+    bool operator>=(const Rational &right) const;
+    bool operator<=(const Rational &right) const;
+    bool operator<(const Rational &right) const;
+    bool operator>(const Rational &right) const;
+
+    const Rational operator--(int);
+    Rational operator--();
+    const Rational operator++(int);
+    Rational operator++();
+
+    Rational operator-();
+    Rational operator+() const;
+
+    //istream &operator>>(istream &in);
+    //ostream &operator<<(ostream &os);
+
+    string asDecimal(size_t precision = 0) const {
+
+    }
+};
+
+
+Rational Rational::operator+(const Rational &r) const{
+    Rational result = *this;
+    result += r;
+    return result;
+}
+
+
+istream& operator >> (std::istream &in, Rational &a)
+{
+    string s;
+    in >> s;
+    int p=0, q=0;
+    size_t i;
+    for (i=0; i < s.size() && s[i] != '/'; ++i){
+        p = p*10 + (int) i - '0';
+    }
+    if (i == s.size()) q = 1;
+    for (; i < s.size(); ++i){
+        q = q*10 + (int) i - '0';
+    }
+    a = Rational(p, q);
+    return in;
+}
+
+ostream& operator << (std::ostream &os, const Rational &a)
+{
+    return os << a.toString();
+}
+
+Rational Rational::operator+() const{
+    return *this;
+}
+
+
+Rational Rational::operator-(const Rational &r) const{
+    Rational result = *this;
+    result -= r;
+    return result;
+}
+
+Rational &Rational::operator+=(const Rational &right) {
+    *this = Rational(this->nominator * right.denominator + this->denominator * right.nominator,
+            this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator-=(const Rational &right) {
+    *this = Rational(this->nominator * right.denominator - this->denominator * right.nominator,
+                     this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator=(const Rational &right) {
+    if (this == &right) {
+        return *this;
+    }
+    this->nominator = right.nominator;
+    this->denominator = right.denominator;
+    Check(*this);
+    return *this;
+}
+
+Rational Rational::operator-() {
+    this->nominator = -this->nominator;
+    Check(*this);
+    return *this;
+}
+
+bool Rational::operator==(const Rational &right) const{
+    return !(*this > right) && !(*this < right);
+}
+
+bool Rational::operator>(const Rational &right) const{
+    return this->nominator * right.denominator > this->denominator * right.nominator;
+}
+
+bool Rational::operator<(const Rational &right) const{
+    return right > *this;
+}
+
+bool Rational::operator<=(const Rational &right) const{
+    return *this < right || *this == right;
+}
+
+bool Rational::operator>=(const Rational &right) const{
+    return *this == right || *this > right;
+}
+
+Rational Rational::operator++() {
+    return *this + 1;
+}
+
+const Rational Rational::operator++(int){
+    Rational oldValue = *this;
+    *this += 1;
+    Check(*this);
+    return oldValue;
+}
+
+Rational Rational::operator--() {
+    return *this - 1;
+}
+
+const Rational Rational::operator--(int) {
+    Rational oldValue = *this;
+    *this -= 1;
+    Check(*this);
+    return oldValue;
+}
+
+Rational Rational::operator/(const Rational &right) const{
+    Rational res = *this;
+    res /= right;
+    return res;
+}
+
+Rational Rational::operator*(const Rational &right) const{
+    Rational res = *this;
+    res *= right;
+    return res;
+}
+
+Rational &Rational::operator*=(const Rational &right) {
+    *this = Rational(this->nominator * right.nominator, this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator/=(const Rational &right) {
+    if (right == 0) {
+        throw Rational::DivideByZero();
+    }
+    *this = Rational(this->nominator * right.denominator, this->denominator * right.nominator);
+    Check(*this);
+    return *this;
+}
+
+
+int main()
+{
+    Rational a, b;
+    cin >> a >> b;
+    cout << a / b;
+}
