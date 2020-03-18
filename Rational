@@ -4,8 +4,6 @@
 
 using namespace std;
 
-const int Base = 10;
-
 class Rational {
 private:
 
@@ -92,7 +90,23 @@ public:
     //ostream &operator<<(ostream &os);
 
     string asDecimal(size_t precision = 0) const {
-
+        string s;
+        s = to_string(this->nominator / this->denominator) + ',';
+        int left = this->nominator % this->denominator;
+        for (size_t i=0; i <= precision; ++i){
+            s += to_string((left * 10) / this->denominator);
+            left *= 10;
+            left %= this->denominator;
+        }
+        if (s[s.size() - 2] == ','){
+            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
+            s.erase(s.size() - 2, 2);
+        }
+        else{
+            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1;
+            s.erase(s.size() - 1);
+        }
+        return s;
     }
 };
 
