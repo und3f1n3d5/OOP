@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <algorithm>
 
 using namespace std;
 
@@ -125,16 +124,18 @@ public:
         zeroCheck();
     }
 
-    BigInt(const int &i) {
-        is_positive = (i >= 0);
-        int res = abs(i);
+    BigInt(const int &j) {
+        is_positive = (j >= 0);
+        int res = abs(j);
         while (res > 0){
             data.push_back(res % 10);
             res /= 10;
         }
         if (data.empty()) data.push_back(0);
         zeroCheck();
-        reverse(data.begin(), data.end());
+        for (size_t i=0; i < data.size()/2; ++i) {
+            swap(data[i], data[data.size() - i - 1]);
+        }
     }
 
     explicit operator bool () const {
