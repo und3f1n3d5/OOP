@@ -306,23 +306,23 @@ bool BigInt::operator>=(const BigInt &right) const{
 }
 
 BigInt BigInt::operator++() {
-    return *this + BigInt("1");
+    return *this + 1;
 }
 
 const BigInt BigInt::operator++(int){
     BigInt oldValue = *this;
-    *this += BigInt("1");
+    *this += 1;
     this->zeroCheck();
     return oldValue;
 }
 
 BigInt BigInt::operator--() {
-    return *this - BigInt("1");
+    return *this - 1;
 }
 
 const BigInt BigInt::operator--(int) {
     BigInt oldValue = *this;
-    *this -= BigInt("1");
+    *this -= 1;
     this->zeroCheck();
     return oldValue;
 }
