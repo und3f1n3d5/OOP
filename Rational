@@ -12,8 +12,7 @@ private:
     class DivideByZero: exception {};
 
     static void reduce(Rational &r) {
-        vector <int> dev;
-        for (int i = 2; i < r.nominator; ) {
+        for (int i = 2; i <= r.nominator; ) {
             if (r.nominator % i == 0 && r.denominator % i == 0){
                 r.nominator /= i;
                 r.denominator /= i;
@@ -124,13 +123,17 @@ istream& operator >> (std::istream &in, Rational &a)
     in >> s;
     int p=0, q=0;
     size_t i;
-    for (i=0; i < s.size() && s[i] != '/'; ++i){
-        p = p*10 + (int) i - '0';
+    for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i){
+        p = p*10 + (int) s[i] - '0';
     }
+    if (s[0] == '-') p = -p;
     if (i == s.size()) q = 1;
-    for (; i < s.size(); ++i){
-        q = q*10 + (int) i - '0';
+    ++i;
+    int j = i;
+    for (i = i + (s[i] == '-'); i < s.size(); ++i){
+        q = q*10 + (int) s[i] - '0';
     }
+    if (s[j] == '-') p = -p;
     a = Rational(p, q);
     return in;
 }
@@ -255,5 +258,5 @@ int main()
 {
     Rational a, b;
     cin >> a >> b;
-    cout << a / b;
+    cout << a * b;
 }
