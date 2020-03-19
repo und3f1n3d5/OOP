@@ -81,7 +81,9 @@ private:
         for (i = 0; i < left.data.size(); ++i) {
             result.data[result.data.size() - i - 1] =
                     (Base + right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) % Base;
-            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) / Base;
+            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k);
+            if (k < 0) k = -1;
+            else k = 0;
         }
         while (i < result.data.size()) {
             result.data[result.data.size() - i - 1] = (Base + right.data[right.data.size() - i - 1] + k) % Base;
