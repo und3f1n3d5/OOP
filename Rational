@@ -51,7 +51,7 @@ public:
     }
 
     explicit operator bool () const {
-        return !(*this == 0);
+        return this->nominator != 0;
     }
 
     string toString() const {
@@ -61,22 +61,11 @@ public:
         return s;
     }
 
-    Rational operator+(const Rational &right) const;
-    Rational operator-(const Rational &right) const;
-    Rational operator*(const Rational &right) const;
-    Rational operator/(const Rational &right) const;
-
     Rational &operator+=(const Rational &right);
     Rational &operator-=(const Rational &right);
     Rational &operator*=(const Rational &right);
     Rational &operator/=(const Rational &right);
 
-    bool operator==(const Rational &right) const;
-    bool operator>=(const Rational &right) const;
-    bool operator<=(const Rational &right) const;
-    bool operator<(const Rational &right) const;
-    bool operator>(const Rational &right) const;
-    bool operator!=(const Rational &right) const;
 
     const Rational operator--(int);
     Rational operator--();
@@ -86,8 +75,7 @@ public:
     Rational operator-();
     Rational operator+() const;
 
-    //istream &operator>>(istream &in);
-    //ostream &operator<<(ostream &os);
+    friend bool operator>(const Rational &left, const Rational &right);
 
     string asDecimal(size_t precision = 0) const {
         string s;
@@ -110,9 +98,21 @@ public:
     }
 };
 
+Rational operator+(const Rational &left, const Rational &right);
+Rational operator-(const Rational &left, const Rational &right);
+Rational operator*(const Rational &left, const Rational &right);
+Rational operator/(const Rational &left, const Rational &right);
 
-Rational Rational::operator+(const Rational &r) const{
-    Rational result = *this;
+bool operator==(const Rational &left, const Rational &right);
+bool operator>=(const Rational &left, const Rational &right);
+bool operator<=(const Rational &left, const Rational &right);
+bool operator<(const Rational &left, const Rational &right);
+bool operator>(const Rational &left, const Rational &right);
+bool operator!=(const Rational &left, const Rational &right);
+
+
+Rational operator+(const Rational &left, const Rational &r) {
+    Rational result = left;
     result += r;
     return result;
 }
@@ -149,8 +149,8 @@ Rational Rational::operator+() const{
 }
 
 
-Rational Rational::operator-(const Rational &r) const{
-    Rational result = *this;
+Rational operator-(const Rational &left, const Rational &r) {
+    Rational result = left;
     result -= r;
     return result;
 }
@@ -185,24 +185,24 @@ Rational Rational::operator-() {
     return *this;
 }
 
-bool Rational::operator==(const Rational &right) const{
-    return !(*this > right) && !(*this < right);
+bool operator==(const Rational &left, const Rational &right) {
+    return !(left > right) && !(left < right);
 }
 
-bool Rational::operator>(const Rational &right) const{
-    return this->nominator * right.denominator > this->denominator * right.nominator;
+bool operator>(const Rational &left, const Rational &right) {
+    return left.nominator * right.denominator > left.denominator * right.nominator;
 }
 
-bool Rational::operator<(const Rational &right) const{
-    return right > *this;
+bool operator<(const Rational &left, const Rational &right) {
+    return right > left;
 }
 
-bool Rational::operator<=(const Rational &right) const{
-    return *this < right || *this == right;
+bool operator<=(const Rational &left, const Rational &right) {
+    return left < right || left == right;
 }
 
-bool Rational::operator>=(const Rational &right) const{
-    return *this == right || *this > right;
+bool operator>=(const Rational &left, const Rational &right) {
+    return left == right || left > right;
 }
 
 Rational Rational::operator++() {
@@ -227,14 +227,14 @@ const Rational Rational::operator--(int) {
     return oldValue;
 }
 
-Rational Rational::operator/(const Rational &right) const{
-    Rational res = *this;
+Rational operator/(const Rational &left, const Rational &right) {
+    Rational res = left;
     res /= right;
     return res;
 }
 
-Rational Rational::operator*(const Rational &right) const{
-    Rational res = *this;
+Rational operator*(const Rational &left, const Rational &right) {
+    Rational res = left;
     res *= right;
     return res;
 }
@@ -254,8 +254,8 @@ Rational &Rational::operator/=(const Rational &right) {
     return *this;
 }
 
-bool Rational::operator!=(const Rational &right) const {
-    return !(*this == right);
+bool operator!=(const Rational &left, const Rational &right) {
+    return !(left == right);
 }
 
 
