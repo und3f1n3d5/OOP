@@ -1,0 +1,707 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+const int Base = 10;
+
+class BigInt {
+private:
+    vector<int> data;
+
+    bool is_positive = true;
+
+    class DivideByZero: exception {};
+
+    void zeroCheck() {
+        int zeros = 0;
+        bool is_zero = true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (data[i] == 0) ++zeros;
+            else {
+                is_zero = false;
+                break;
+            }
+        }
+        if (is_zero) {
+            this->data.resize(1, 0);
+            this->is_positive = true;
+        }
+        else if (zeros){
+            vector <int> new_data;
+            for (int i=zeros; i < this->data.size(); ++i){
+                new_data.push_back(this->data[i]);
+            }
+            this->data = new_data;
+        }
+    }
+
+    static BigInt Plus(const BigInt& a, const BigInt& b) {
+        BigInt result, left, right;
+        if (a > b) {
+            left = b;
+            right = a;
+        }
+        else {
+            left = a;
+            right = b;
+        }
+        result.data.resize(max(left.data.size(), right.data.size()));
+        int k = 0;
+        size_t i;
+        for (i = 0; i < left.data.size(); ++i) {
+            result.data[result.data.size() - i - 1] =
+                    (left.data[left.data.size() - i - 1] + right.data[right.data.size() - i - 1] + k) % Base;
+            k = (left.data[left.data.size() - i - 1] + right.data[right.data.size() - i - 1] + k) / Base;
+        }
+        while (i < result.data.size()) {
+            result.data[result.data.size() - i - 1] = (right.data[right.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] + k) / Base;
+            ++i;
+        }
+        if (k > 0)
+            result.data.insert(result.data.begin(), k);
+        return result;
+    }
+
+    static BigInt Minus(const BigInt& a, const BigInt& b) {
+        BigInt result, left, right;
+        if (a > b) {
+            left = b;
+            right = a;
+        }
+        else {
+            left = a;
+            right = b;
+        }
+        result.data.resize(right.data.size());
+        int k = 0;
+        size_t i;
+        for (i = 0; i < left.data.size(); ++i) {
+            result.data[result.data.size() - i - 1] =
+                    abs(right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) / Base;
+        }
+        while (i < result.data.size()) {
+            result.data[result.data.size() - i - 1] = abs(right.data[right.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] + k) / Base;
+            ++i;
+        }
+        if (k > 0)
+            result.data.insert(result.data.begin(), abs(k));
+        return result;
+    }
+
+    static BigInt abs1(const BigInt& a){
+        BigInt res = a;
+        res.is_positive = true;
+        return res;
+    }
+
+    static BigInt& Multiply(BigInt &a, const BigInt& b) {
+        a.is_positive = (a.is_positive == b.is_positive);
+        int k=0;
+        for (size_t i = 0; i < a.data.size(); ++i) {
+            k = (a.data[a.data.size() - i - 1] * b.data[0] + k) / Base;
+            a.data[a.data.size() - i - 1] = (a.data[a.data.size() - i - 1] * b.data[0] + k) % Base;
+        }
+        return a;
+    }
+
+public:
+    BigInt() = default;
+
+    BigInt &operator=(const BigInt &right);
+
+    explicit BigInt(const string &s) {
+        int res = 0, k = 0;
+        is_positive = (s[0] != '-');
+        for (auto i : s) {
+            if (i == '-') continue;
+            data.push_back((int) i - '0');
+        }
+        zeroCheck();
+    }
+
+    BigInt(const int &j) {
+        is_positive = (j >= 0);
+        int res = abs(j);
+        while (res > 0){
+            data.push_back(res % 10);
+            res /= 10;
+        }
+        if (data.empty()) data.push_back(0);
+        zeroCheck();
+        for (size_t i=0; i < data.size()/2; ++i) {
+            swap(data[i], data[data.size() - i - 1]);
+        }
+    }
+
+    virtual explicit operator bool () const {
+        return !(*this == 0);
+    }
+
+    virtual string toString() const {
+        string s = (this->is_positive ? "" : "-" );
+        for(int i : this->data)
+            s += (to_string(i + '0') );
+        if(this->data.empty()) s += '0';
+        return s;
+    }
+
+    BigInt operator+(const BigInt &right) const;
+    BigInt operator-(const BigInt &right) const;
+    BigInt operator*(const BigInt &right) const;
+    BigInt operator/(const BigInt &right) const;
+    BigInt operator%(const BigInt &right) const;
+
+    BigInt &operator+=(const BigInt &right);
+    BigInt &operator-=(const BigInt &right);
+    BigInt &operator*=(const BigInt &right);
+    BigInt &operator/=(const BigInt &right);
+    BigInt &operator%=(const BigInt &right);
+
+    bool operator==(const BigInt &right) const;
+    bool operator>=(const BigInt &right) const;
+    bool operator<=(const BigInt &right) const;
+    bool operator<(const BigInt &right) const;
+    bool operator>(const BigInt &right) const;
+
+    const BigInt operator--(int);
+    BigInt operator--();
+    const BigInt operator++(int);
+    BigInt operator++();
+
+    BigInt operator-();
+    BigInt operator+() const;
+
+    //istream &operator>>(istream &in);
+    //ostream &operator<<(ostream &os);
+};
+
+
+BigInt BigInt::operator+(const BigInt &r) const{
+    BigInt result = *this;
+    result += r;
+    return result;
+}
+
+
+istream& operator >> (std::istream &in, BigInt &a)
+{
+    string s;
+    in >> s;
+    a = BigInt(s);
+    return in;
+}
+
+ostream& operator << (std::ostream &os, const BigInt &a)
+{
+    return os << a.toString();
+}
+
+BigInt BigInt::operator+() const{
+    return *this;
+}
+
+
+BigInt BigInt::operator-(const BigInt &r) const{
+    BigInt result = *this;
+    result -= r;
+    return result;
+}
+
+BigInt &BigInt::operator+=(const BigInt &right) {
+    if (this->is_positive && right.is_positive) {
+        this->is_positive = true;
+        *this = Plus(abs1(*this), abs1(right));
+    }
+    if (!this->is_positive && !right.is_positive){
+        this->is_positive = false;
+        *this = Plus(abs1(*this), abs1(right));
+    }
+    if (this->is_positive && !right.is_positive){
+        this->is_positive = (abs1(right) < *this);
+        *this = Minus(abs1(*this), abs1(right));
+    }
+    if (!this->is_positive && right.is_positive){
+        this->is_positive = (abs1(*this) > right);
+        *this = Minus(abs1(*this), abs1(right));
+    }
+    this->zeroCheck();
+    return *this;
+}
+
+BigInt &BigInt::operator-=(const BigInt &right) {
+    if (this->is_positive == right.is_positive) {
+        this->is_positive = (*this > right);
+        *this = Minus(abs1(*this), abs1(right));
+    }
+    else if (this->is_positive && !right.is_positive){
+        this->is_positive = true;
+        *this = Plus(abs1(*this), abs1(right));
+    }
+    else if (!this->is_positive && right.is_positive){
+        this->is_positive = false;
+        *this = Plus(abs1(*this), abs1(right));
+    }
+    this->zeroCheck();
+    return *this;
+}
+
+BigInt &BigInt::operator=(const BigInt &right) {
+    if (this == &right) {
+        return *this;
+    }
+    this->data = right.data;
+    this->is_positive = right.is_positive;
+    this->zeroCheck();
+    return *this;
+}
+
+BigInt BigInt::operator-() {
+    this->is_positive = !this->is_positive;
+    this->zeroCheck();
+    return *this;
+}
+
+bool BigInt::operator==(const BigInt &right) const{
+    return !(*this > right) && !(*this < right);
+}
+
+bool BigInt::operator>(const BigInt &right) const{
+    if (this->is_positive){
+        if (!right.is_positive) return true;
+        if (right.data.size() > this->data.size()) return false;
+        if (this->data.size() > right.data.size()) return true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (this->data[i] < right.data[i]) return false;
+            if (this->data[i] > right.data[i]) return true;
+        }
+        return false;
+    }
+    else{
+        if (!right.is_positive) return false;
+        if (right.data.size() < this->data.size()) return false;
+        if (this->data.size() < right.data.size()) return true;
+        for (size_t i=0; i < this->data.size(); ++i){
+            if (this->data[i] > right.data[i]) return false;
+            if (this->data[i] < right.data[i]) return true;
+        }
+        return false;
+    }
+}
+
+bool BigInt::operator<(const BigInt &right) const{
+    return right > *this;
+}
+
+bool BigInt::operator<=(const BigInt &right) const{
+    return *this < right || *this == right;
+}
+
+bool BigInt::operator>=(const BigInt &right) const{
+    return *this == right || *this > right;
+}
+
+BigInt BigInt::operator++() {
+    return *this + 1;
+}
+
+const BigInt BigInt::operator++(int){
+    BigInt oldValue = *this;
+    *this += 1;
+    this->zeroCheck();
+    return oldValue;
+}
+
+BigInt BigInt::operator--() {
+    return *this - 1;
+}
+
+const BigInt BigInt::operator--(int) {
+    BigInt oldValue = *this;
+    *this -= 1;
+    this->zeroCheck();
+    return oldValue;
+}
+
+BigInt BigInt::operator/(const BigInt &right) const{
+    BigInt res = *this;
+    res /= right;
+    return res;
+}
+
+BigInt BigInt::operator*(const BigInt &right) const{
+    BigInt res = *this;
+    res *= right;
+    return res;
+}
+
+BigInt &BigInt::operator*=(const BigInt &right) {
+    if (this->data.size() == 1 && right.data.size() == 1){
+        *this = BigInt(to_string(this->data[0] * right.data[0]));
+        return *this;
+    }
+    if (this->data.empty() || right.data.empty() || *this == 0 || right == 0) {
+        *this = 0;
+        return *this;
+    }
+    if (right.data.size() == 1){
+        return Multiply(*this, right);
+    }
+    if (this->data.size() == 1){
+        BigInt tmp = right;
+        *this = Multiply(tmp, *this);
+        return *this;
+    }
+    this->is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
+    BigInt A0, B0;
+    for (size_t i=0; i < this->data.size() / 2; ++i){
+        A0.data.push_back(this->data[i]);
+    }
+    for (size_t i=0; i < right.data.size() / 2; ++i){
+        B0.data.push_back(right.data[i]);
+    }
+    BigInt A1, B1;
+    for (size_t i=this->data.size() / 2; i < this->data.size(); ++i){
+        A1.data.push_back(this->data[i]);
+    }
+    for (size_t i=right.data.size() / 2; i < right.data.size(); ++i){
+        B1.data.push_back(right.data[i]);
+    }
+    A0.zeroCheck();
+    A1.zeroCheck();
+    B0.zeroCheck();
+    B1.zeroCheck();
+    BigInt C0 = A0 * B0, C1 = A0 * B1, C2 = A1 * B0;
+    size_t m1 = this->data.size() / 2, m2 = right.data.size() / 2;
+    for (size_t i=0; i < m2; ++i){
+        C2.data.push_back(0);
+        C0.data.push_back(0);
+    }
+    for (size_t i=0; i < m1; ++i){
+        C1.data.push_back(0);
+        C0.data.push_back(0);
+    }
+    *this = A1 * B1 + C0 + C1;
+    this->zeroCheck();
+    return *this;
+}
+
+BigInt &BigInt::operator/=(const BigInt &right) {
+    if (right == 0) {
+        throw BigInt::DivideByZero();
+    }
+    this->is_positive = (this->is_positive && right.is_positive) or (!this->is_positive && !right.is_positive);
+    BigInt res;
+    BigInt curValue;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        size_t j;
+        for (j = i; j < min(this->data.size(), right.data.size() + i); ++j) {
+            if (curValue < right) curValue.data.push_back(this->data[i]);
+            else break;
+        }
+        i += j;
+        int mid = 0;
+        int lBorder = 0;
+        int rBorder = Base;
+        while (lBorder < rBorder - 1) {
+            mid = (lBorder + rBorder) / 2;
+            BigInt cur = right * mid;
+            if (cur <= curValue) {
+                lBorder = mid;
+            } else {
+                rBorder = mid;
+            }
+        }
+        res.data.push_back(lBorder);
+        curValue -= right * lBorder;
+    }
+    res.zeroCheck();
+    *this = res;
+    return *this;
+}
+
+
+
+BigInt BigInt::operator%(const BigInt &right) const {
+    BigInt res = *this;
+    res %= right;
+    return res;
+}
+
+
+BigInt &BigInt::operator%=(const BigInt &right) {
+    BigInt res;
+    *this -= (*this / right) * right;
+    if (!this->is_positive) {
+        res = res + right;
+    }
+    this->is_positive = true;
+    this->zeroCheck();
+    return *this;
+}
+
+
+class Rational : BigInt{
+private:
+
+    BigInt nominator=0, denominator=1;
+
+    class DivideByZero: exception {};
+
+    static void reduce(Rational &r) {
+        for (BigInt i = 2; i <= r.nominator; ) {
+            if (r.nominator % i == 0 && r.denominator % i == 0){
+                r.nominator /= i;
+                r.denominator /= i;
+            }
+            else{
+                ++i;
+            }
+        }
+    }
+
+    static void Check(Rational &r) {
+        if (r.denominator < 0){
+            r.nominator *= -1;
+            r.denominator *= -1;
+        }
+        if (r.nominator == 0) r.denominator = 1;
+        reduce(r);
+    }
+
+public:
+    Rational() = default;
+
+    Rational &operator=(const Rational &right);
+
+    explicit Rational(const BigInt &p, const BigInt &q) {
+        nominator = p;
+        denominator = q;
+        if (q == 0)
+            throw DivideByZero();
+        Check(*this);
+    }
+
+    Rational(const BigInt &i) {
+        nominator = i;
+        denominator = 1;
+    }
+
+    Rational(const int &i) {
+        nominator = i;
+        denominator = 1;
+    }
+
+    explicit operator bool () const override {
+        return !(*this == 0);
+    }
+
+    string toString() const override {
+        if (this->denominator == 1)
+            return this->nominator.toString();
+        string s =  this->nominator.toString() + '/' + this->denominator.toString();
+        return s;
+    }
+
+    Rational operator+(const Rational &right) const;
+    Rational operator-(const Rational &right) const;
+    Rational operator*(const Rational &right) const;
+    Rational operator/(const Rational &right) const;
+
+    Rational &operator+=(const Rational &right);
+    Rational &operator-=(const Rational &right);
+    Rational &operator*=(const Rational &right);
+    Rational &operator/=(const Rational &right);
+
+    bool operator==(const Rational &right) const;
+    bool operator>=(const Rational &right) const;
+    bool operator<=(const Rational &right) const;
+    bool operator<(const Rational &right) const;
+    bool operator>(const Rational &right) const;
+
+    const Rational operator--(int);
+    Rational operator--();
+    const Rational operator++(int);
+    Rational operator++();
+
+    Rational operator-();
+    Rational operator+() const;
+
+    //istream &operator>>(istream &in);
+    //ostream &operator<<(ostream &os);
+
+    string asDecimal(size_t precision = 0) const {
+        string s;
+        s = (this->nominator/this->denominator).toString() + ',';
+        BigInt left = this->nominator % this->denominator;
+        for (size_t i=0; i <= precision; ++i){
+            s += ((left * 10) / this->denominator).toString();
+            left *= 10;
+            left %= this->denominator;
+        }
+        if (s[s.size() - 2] == ','){
+            if ((BigInt) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
+            s.erase(s.size() - 2, 2);
+        }
+        else{
+            if ((BigInt) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1;
+            s.erase(s.size() - 1);
+        }
+        return s;
+    }
+};
+
+
+Rational Rational::operator+(const Rational &r) const{
+    Rational result = *this;
+    result += r;
+    return result;
+}
+
+
+istream& operator >> (std::istream &in, Rational &a)
+{
+    string s;
+    in >> s;
+    BigInt p=0, q=0;
+    size_t i;
+    for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i){
+        p = p*10 + (BigInt) s[i] - '0';
+    }
+    if (s[0] == '-') p = -p;
+    if (i == s.size()) q = 1;
+    ++i;
+    int j = i;
+    for (i = i + (s[i] == '-'); i < s.size(); ++i){
+        q = q*10 + (BigInt) s[i] - '0';
+    }
+    if (s[j] == '-') p = -p;
+    a = Rational(p, q);
+    return in;
+}
+
+ostream& operator << (std::ostream &os, const Rational &a)
+{
+    return os << a.toString();
+}
+
+Rational Rational::operator+() const{
+    return *this;
+}
+
+
+Rational Rational::operator-(const Rational &r) const{
+    Rational result = *this;
+    result -= r;
+    return result;
+}
+
+Rational &Rational::operator+=(const Rational &right) {
+    *this = Rational(this->nominator * right.denominator + this->denominator * right.nominator,
+                     this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator-=(const Rational &right) {
+    *this = Rational(this->nominator * right.denominator - this->denominator * right.nominator,
+                     this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator=(const Rational &right) {
+    if (this == &right) {
+        return *this;
+    }
+    this->nominator = right.nominator;
+    this->denominator = right.denominator;
+    Check(*this);
+    return *this;
+}
+
+Rational Rational::operator-() {
+    this->nominator = -this->nominator;
+    Check(*this);
+    return *this;
+}
+
+bool Rational::operator==(const Rational &right) const{
+    return !(*this > right) && !(*this < right);
+}
+
+bool Rational::operator>(const Rational &right) const{
+    return this->nominator * right.denominator > this->denominator * right.nominator;
+}
+
+bool Rational::operator<(const Rational &right) const{
+    return right > *this;
+}
+
+bool Rational::operator<=(const Rational &right) const{
+    return *this < right || *this == right;
+}
+
+bool Rational::operator>=(const Rational &right) const{
+    return *this == right || *this > right;
+}
+
+Rational Rational::operator++() {
+    return *this + 1;
+}
+
+const Rational Rational::operator++(int){
+    Rational oldValue = *this;
+    *this += 1;
+    Check(*this);
+    return oldValue;
+}
+
+Rational Rational::operator--() {
+    return *this - 1;
+}
+
+const Rational Rational::operator--(int) {
+    Rational oldValue = *this;
+    *this -= 1;
+    Check(*this);
+    return oldValue;
+}
+
+Rational Rational::operator/(const Rational &right) const{
+    Rational res = *this;
+    res /= right;
+    return res;
+}
+
+Rational Rational::operator*(const Rational &right) const{
+    Rational res = *this;
+    res *= right;
+    return res;
+}
+
+Rational &Rational::operator*=(const Rational &right) {
+    *this = Rational(this->nominator * right.nominator, this->denominator * right.denominator);
+    Check(*this);
+    return *this;
+}
+
+Rational &Rational::operator/=(const Rational &right) {
+    if (right == 0) {
+        throw Rational::DivideByZero();
+    }
+    *this = Rational(this->nominator * right.denominator, this->denominator * right.nominator);
+    Check(*this);
+    return *this;
+}
+
+int main()
+{
+    BigInt a, b;
+    cin >> a >> b;
+    cout << a % b;
+}
