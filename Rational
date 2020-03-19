@@ -76,6 +76,7 @@ public:
     bool operator<=(const Rational &right) const;
     bool operator<(const Rational &right) const;
     bool operator>(const Rational &right) const;
+    bool operator!=(const Rational &right) const;
 
     const Rational operator--(int);
     Rational operator--();
@@ -251,6 +252,10 @@ Rational &Rational::operator/=(const Rational &right) {
     *this = Rational(this->nominator * right.denominator, this->denominator * right.nominator);
     Check(*this);
     return *this;
+}
+
+bool Rational::operator!=(const Rational &right) const {
+    return !(*this == right);
 }
 
 
