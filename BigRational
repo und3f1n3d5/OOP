@@ -2,7 +2,8 @@
 #include <vector>
 #include <string>
 
-//+ - * /
+//+ - * / % OK
+// * slow((
 
 using namespace std;
 
@@ -383,7 +384,7 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
         *this = Multiply(tmp, *this);
         return *this;
     }
-    this->is_positive = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
+    bool k = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
     BigInteger A0, B0;
     for (size_t i=0; i < this->data.size() / 2; ++i){
         A0.data.push_back(this->data[i]);
@@ -413,6 +414,7 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
         C0.data.push_back(0);
     }
     *this = A1 * B1 + C0 + C1 + C2;
+    this->is_positive = k;
     this->zeroCheck();
     return *this;
 }
@@ -743,12 +745,7 @@ bool operator!=(const Rational &left, const Rational &right) {
 
 int main() {
     BigInteger a, b;
-    int c, d;
     cin >> a >> b;
-    //a = c;
-    //b = d;
-    cout << a / b;
-    //cout << endl;
-    //cout << c / d;
+    cout << a * b;
     return 0;
 }
