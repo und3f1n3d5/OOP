@@ -100,12 +100,6 @@ private:
         return result;
     }
 
-    static BigInteger abs1(const BigInteger& a){
-        BigInteger res = a;
-        res.is_positive = true;
-        return res;
-    }
-
     static BigInteger& Multiply(BigInteger &a, const BigInteger& b) {
         a.is_positive = (a.is_positive == b.is_positive);
         int k=0, m=0;
@@ -155,6 +149,12 @@ public:
 
     ~BigInteger() {
         data.clear();
+    }
+
+    static BigInteger abs1(const BigInteger& a){
+        BigInteger res = a;
+        res.is_positive = true;
+        return res;
     }
 
     virtual explicit operator bool () const {
@@ -481,6 +481,7 @@ bool operator!=(const BigInteger &left, const BigInteger &right) {
     return !(left == right);
 }
 
+
 class Rational {
 private:
 
@@ -489,14 +490,13 @@ private:
     class DivideByZero: exception {};
 
     static void reduce(Rational &r) {
-        if (r.denominator == 1) return;
-        for (BigInteger i = 2; i <= r.nominator; ) {
+        for (BigInteger i = 2; i <= BigInteger::abs1(r.nominator); ) {
             if (r.nominator % i == 0 && r.denominator % i == 0){
                 r.nominator /= i;
                 r.denominator /= i;
             }
             else{
-                i += 1;
+                ++i;
             }
         }
     }
@@ -533,8 +533,6 @@ public:
         denominator = 1;
     }
 
-    ~Rational() = default;
-
     explicit operator bool () const {
         return this->nominator != 0;
     }
@@ -565,20 +563,21 @@ public:
     string asDecimal(size_t precision = 0) const {
         string s;
         s = (this->nominator / this->denominator).toString() + ',';
-        BigInteger left = this->nominator % this->denominator;
+        BigInteger left = BigInteger::abs1(this->nominator) % this->denominator;
         for (size_t i=0; i <= precision; ++i){
             s += ((left * 10) / this->denominator).toString();
             left *= 10;
             left %= this->denominator;
         }
         if (s[s.size() - 2] == ','){
-            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
+            if ((BigInteger) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
             s.erase(s.size() - 2, 2);
         }
         else{
-            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1;
+            if ((BigInteger) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1;
             s.erase(s.size() - 1);
         }
+        if (this->nominator < 0 && s[0] != '-') s = '-' + s;
         return s;
     }
 };
@@ -610,7 +609,7 @@ istream& operator >> (std::istream &in, Rational &a)
     BigInteger p=0, q=0;
     size_t i;
     for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i){
-        p = p * 10 + (int) s[i] - '0';
+        p = p*10 + (int) s[i] - '0';
     }
     if (s[0] == '-') p = -p;
     if (i == s.size()) q = 1;
@@ -742,6 +741,7 @@ Rational &Rational::operator/=(const Rational &right) {
 bool operator!=(const Rational &left, const Rational &right) {
     return !(left == right);
 }
+
 
 int main() {
     BigInteger a, b;
