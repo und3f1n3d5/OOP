@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-//+ - *
+//+ - * /
 
 using namespace std;
 
@@ -60,7 +60,7 @@ private:
         while (i < result.data.size()) {
             result.data[result.data.size() - i - 1] = (right.data[right.data.size() - i - 1] + k) % Base;
             k = (right.data[right.data.size() - i - 1] + k) / Base;
-            i++;
+            i += 1;
         }
         if (k > 0)
             result.data.insert(result.data.begin(), k);
@@ -92,7 +92,7 @@ private:
             k = (right.data[right.data.size() - i - 1] + k);
             if (k < 0) k = -1;
             else k = 0;
-            i++;
+            i += 1;
         }
         if (k > 0)
             result.data.insert(result.data.begin(), abs(k));
@@ -421,22 +421,22 @@ BigInteger &BigInteger::operator/=(const BigInteger &right) {
     if (right == 0) {
         throw BigInteger::DivideByZero();
     }
-    this->is_positive = (this->is_positive && right.is_positive) or (!this->is_positive && !right.is_positive);
+    bool k = (this->is_positive && right.is_positive) or (!this->is_positive && !right.is_positive);
     BigInteger res;
     BigInteger curValue;
-    for (size_t i = 0; i < this->data.size(); ++i) {
-        size_t j;
-        for (j = i; j < min(this->data.size(), right.data.size() + i); ++j) {
-            if (curValue < right) curValue.data.push_back(this->data[i]);
-            else break;
-        }
-        i += j;
+    for (int j : this->data) {
+        if (curValue < abs1(right)) curValue.data.push_back(j);
+        else break;
+    }
+    size_t i = curValue.data.size();
+    do {
+        curValue.zeroCheck();
         int mid = 0;
         int lBorder = 0;
         int rBorder = Base;
         while (lBorder < rBorder - 1) {
             mid = (lBorder + rBorder) / 2;
-            BigInteger cur = right * mid;
+            BigInteger cur = abs1(right) * mid;
             if (cur <= curValue) {
                 lBorder = mid;
             } else {
@@ -444,10 +444,14 @@ BigInteger &BigInteger::operator/=(const BigInteger &right) {
             }
         }
         res.data.push_back(lBorder);
-        curValue -= right * lBorder;
-    }
+        curValue -= abs1(right) * lBorder;
+        if (i < this->data.size())curValue.data.push_back(this->data[i]);
+        ++i;
+    } while (i <= this->data.size());
     res.zeroCheck();
     *this = res;
+    this->is_positive = k;
+    this->zeroCheck();
     return *this;
 }
 
@@ -490,7 +494,7 @@ private:
                 r.denominator /= i;
             }
             else{
-                i++;
+                i += 1;
             }
         }
     }
@@ -739,9 +743,12 @@ bool operator!=(const Rational &left, const Rational &right) {
 
 int main() {
     BigInteger a, b;
+    int c, d;
     cin >> a >> b;
-    cout << a * b;
+    //a = c;
+    //b = d;
+    cout << a / b;
+    //cout << endl;
+    //cout << c / d;
     return 0;
 }
-
-//145 404
