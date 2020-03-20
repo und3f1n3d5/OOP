@@ -80,11 +80,13 @@ private:
         size_t i;
         for (i = 0; i < left.data.size(); ++i) {
             result.data[result.data.size() - i - 1] =
-                    abs(right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) % Base;
-            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) / Base;
+                    (Base + right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k) % Base;
+            k = (right.data[right.data.size() - i - 1] - left.data[left.data.size() - i - 1] + k);
+            if (k < 0) k = -1;
+            else k = 0;
         }
         while (i < result.data.size()) {
-            result.data[result.data.size() - i - 1] = abs(right.data[right.data.size() - i - 1] + k) % Base;
+            result.data[result.data.size() - i - 1] = (Base + right.data[right.data.size() - i - 1] + k) % Base;
             k = (right.data[right.data.size() - i - 1] + k) / Base;
             ++i;
         }
@@ -131,10 +133,10 @@ public:
             res /= 10;
         }
         if (data.empty()) data.push_back(0);
-        zeroCheck();
         for (size_t i=0; i < data.size()/2; ++i) {
             swap(data[i], data[data.size() - i - 1]);
         }
+        zeroCheck();
     }
 
     virtual explicit operator bool () const {
@@ -145,7 +147,7 @@ public:
     virtual string toString() const {
         string s = (this->is_positive ? "" : "-" );
         for(int i : this->data)
-            s += (to_string(i + '0') );
+            s += (to_string(i) );
         if(this->data.empty()) s += '0';
         return s;
     }
@@ -213,38 +215,44 @@ BigInteger operator-(const BigInteger &left, const BigInteger &r) {
 }
 
 BigInteger &BigInteger::operator+=(const BigInteger &right) {
+    BigInteger a = *this, b = right;
+    a.is_positive = true;
+    b.is_positive = true;
     if (this->is_positive && right.is_positive) {
         this->is_positive = true;
-        *this = Plus(abs1(*this), abs1(right));
+        *this = Plus(a, b);
     }
     if (!this->is_positive && !right.is_positive){
         this->is_positive = false;
-        *this = Plus(abs1(*this), abs1(right));
+        *this = Plus(a, b);
     }
     if (this->is_positive && !right.is_positive){
-        this->is_positive = (abs1(right) < *this);
-        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = (b < *this);
+        *this = Minus(a, b);
     }
     if (!this->is_positive && right.is_positive){
-        this->is_positive = (abs1(*this) > right);
-        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = (a > right);
+        *this = Minus(a, b);
     }
     this->zeroCheck();
     return *this;
 }
 
 BigInteger &BigInteger::operator-=(const BigInteger &right) {
+    BigInteger a = *this, b = right;
+    a.is_positive = true;
+    b.is_positive = true;
     if (this->is_positive == right.is_positive) {
         this->is_positive = (*this > right);
-        *this = Minus(abs1(*this), abs1(right));
+        *this = Minus(a, b);
     }
     else if (this->is_positive && !right.is_positive){
         this->is_positive = true;
-        *this = Plus(abs1(*this), abs1(right));
+        *this = Plus(a, b);
     }
     else if (!this->is_positive && right.is_positive){
         this->is_positive = false;
-        *this = Plus(abs1(*this), abs1(right));
+        *this = Plus(a, b);
     }
     this->zeroCheck();
     return *this;
@@ -385,7 +393,7 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
         C1.data.push_back(0);
         C0.data.push_back(0);
     }
-    *this = A1 * B1 + C0 + C1;
+    *this = A1 * B1 + C0 + C1 + C2;
     this->zeroCheck();
     return *this;
 }
@@ -448,7 +456,7 @@ bool operator!=(const BigInteger &left, const BigInteger &right) {
     return !(left == right);
 }
 
-class Rational : BigInteger{
+class Rational {
 private:
 
     BigInteger nominator=0, denominator=1;
@@ -499,11 +507,11 @@ public:
         denominator = 1;
     }
 
-    explicit operator bool () const override {
+    explicit operator bool () const {
         return this->nominator != 0;
     }
 
-    string toString() const override {
+    string toString() const {
         if (this->denominator == 1)
             return this->nominator.toString();
         string s =  this->nominator.toString() + '/' + this->denominator.toString();
@@ -574,7 +582,7 @@ istream& operator >> (std::istream &in, Rational &a)
     BigInteger p=0, q=0;
     size_t i;
     for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i){
-        p = p*10 + (int) s[i] - '0';
+        p = p * 10 + (int) s[i] - '0';
     }
     if (s[0] == '-') p = -p;
     if (i == s.size()) q = 1;
@@ -705,4 +713,12 @@ Rational &Rational::operator/=(const Rational &right) {
 
 bool operator!=(const Rational &left, const Rational &right) {
     return !(left == right);
+}
+
+int main() {
+    BigInteger a;
+    Rational b;
+    cin >> a >> b;
+    cout << b/a;
+    return 0;
 }
