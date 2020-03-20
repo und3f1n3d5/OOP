@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 
+// + -
+
 using namespace std;
 
 const int Base = 10;
@@ -87,7 +89,9 @@ private:
         }
         while (i < result.data.size()) {
             result.data[result.data.size() - i - 1] = (Base + right.data[right.data.size() - i - 1] + k) % Base;
-            k = (right.data[right.data.size() - i - 1] + k) / Base;
+            k = (right.data[right.data.size() - i - 1] + k);
+            if (k < 0) k = -1;
+            else k = 0;
             ++i;
         }
         if (k > 0)
@@ -137,6 +141,10 @@ public:
             swap(data[i], data[data.size() - i - 1]);
         }
         zeroCheck();
+    }
+
+    ~BigInteger() {
+        data.clear();
     }
 
     virtual explicit operator bool () const {
@@ -243,16 +251,17 @@ BigInteger &BigInteger::operator-=(const BigInteger &right) {
     a.is_positive = true;
     b.is_positive = true;
     if (this->is_positive == right.is_positive) {
-        this->is_positive = (*this > right);
-        *this = Minus(a, b);
+        bool k = (*this > right);
+        *this = Minus(abs1(*this), abs1(right));
+        this->is_positive = k;
     }
     else if (this->is_positive && !right.is_positive){
-        this->is_positive = true;
         *this = Plus(a, b);
+        this->is_positive = true;
     }
     else if (!this->is_positive && right.is_positive){
-        this->is_positive = false;
         *this = Plus(a, b);
+        this->is_positive = false;
     }
     this->zeroCheck();
     return *this;
@@ -464,13 +473,14 @@ private:
     class DivideByZero: exception {};
 
     static void reduce(Rational &r) {
+        if (r.denominator == 1) return;
         for (BigInteger i = 2; i <= r.nominator; ) {
             if (r.nominator % i == 0 && r.denominator % i == 0){
                 r.nominator /= i;
                 r.denominator /= i;
             }
             else{
-                ++i;
+                i++;
             }
         }
     }
@@ -506,6 +516,8 @@ public:
         nominator = i;
         denominator = 1;
     }
+
+    ~Rational() = default;
 
     explicit operator bool () const {
         return this->nominator != 0;
@@ -716,9 +728,8 @@ bool operator!=(const Rational &left, const Rational &right) {
 }
 
 int main() {
-    BigInteger a;
-    Rational b;
+    BigInteger a, b;
     cin >> a >> b;
-    cout << b/a;
+    cout << a * b;
     return 0;
 }
