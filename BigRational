@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-// + -
+//+ - *
 
 using namespace std;
 
@@ -60,7 +60,7 @@ private:
         while (i < result.data.size()) {
             result.data[result.data.size() - i - 1] = (right.data[right.data.size() - i - 1] + k) % Base;
             k = (right.data[right.data.size() - i - 1] + k) / Base;
-            ++i;
+            i++;
         }
         if (k > 0)
             result.data.insert(result.data.begin(), k);
@@ -92,7 +92,7 @@ private:
             k = (right.data[right.data.size() - i - 1] + k);
             if (k < 0) k = -1;
             else k = 0;
-            ++i;
+            i++;
         }
         if (k > 0)
             result.data.insert(result.data.begin(), abs(k));
@@ -107,10 +107,19 @@ private:
 
     static BigInteger& Multiply(BigInteger &a, const BigInteger& b) {
         a.is_positive = (a.is_positive == b.is_positive);
-        int k=0;
+        int k=0, m=0;
         for (size_t i = 0; i < a.data.size(); ++i) {
-            k = (a.data[a.data.size() - i - 1] * b.data[0] + k) / Base;
+            m = (a.data[a.data.size() - i - 1] * b.data[0] + k) / Base;
             a.data[a.data.size() - i - 1] = (a.data[a.data.size() - i - 1] * b.data[0] + k) % Base;
+            k = m;
+        }
+        if (k > 0){
+            vector <int> tmp;
+            tmp.push_back(k);
+            for (int i : a.data){
+                tmp.push_back(i);
+            }
+            a.data = tmp;
         }
         return a;
     }
@@ -359,6 +368,7 @@ BigInteger operator*(const BigInteger &left, const BigInteger &right) {
 BigInteger &BigInteger::operator*=(const BigInteger &right) {
     if (this->data.size() == 1 && right.data.size() == 1){
         *this = BigInteger(to_string(this->data[0] * right.data[0]));
+        this->is_positive = (this->is_positive == right.is_positive);
         return *this;
     }
     if (this->data.empty() || right.data.empty() || *this == 0 || right == 0) {
@@ -388,17 +398,17 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
     for (size_t i=right.data.size() / 2; i < right.data.size(); ++i){
         B1.data.push_back(right.data[i]);
     }
+    size_t a = A1.data.size(), b = B1.data.size();
     A0.zeroCheck();
     A1.zeroCheck();
     B0.zeroCheck();
     B1.zeroCheck();
     BigInteger C0 = A0 * B0, C1 = A0 * B1, C2 = A1 * B0;
-    size_t m1 = this->data.size() / 2, m2 = right.data.size() / 2;
-    for (size_t i=0; i < m2; ++i){
+    for (size_t i = 0; i < b; ++i) {
         C2.data.push_back(0);
         C0.data.push_back(0);
     }
-    for (size_t i=0; i < m1; ++i){
+    for (size_t i = 0; i < a; ++i) {
         C1.data.push_back(0);
         C0.data.push_back(0);
     }
@@ -733,3 +743,5 @@ int main() {
     cout << a * b;
     return 0;
 }
+
+//145 404
