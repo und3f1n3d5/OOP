@@ -165,7 +165,7 @@ public:
     virtual string toString() const {
         string s = (this->is_positive ? "" : "-" );
         for(int i : this->data)
-            s += (to_string(i) );
+            s += (to_string(i));
         if(this->data.empty()) s += '0';
         return s;
     }
@@ -482,6 +482,15 @@ bool operator!=(const BigInteger &left, const BigInteger &right) {
 }
 
 
+
+/*/////////////////////////////////////////////////////////////////////////////////////
+
+                                Rational
+
+/////////////////////////////////////////////////////////////////////////////////////*/
+
+
+
 class Rational {
 private:
 
@@ -490,16 +499,24 @@ private:
     class DivideByZero: exception {};
 
     static void reduce(Rational &r) {
-        for (BigInteger i = 2; i <= BigInteger::abs1(r.nominator); ) {
-            if (r.nominator % i == 0 && r.denominator % i == 0){
-                r.nominator /= i;
-                r.denominator /= i;
+        if (r.nominator != 0) {
+            BigInteger numFirst;
+            numFirst = BigInteger::abs1(r.nominator);
+            BigInteger numSecond = r.denominator;
+            if (numSecond > numFirst) {
+                swap(numFirst, numSecond);
             }
-            else{
-                ++i;
+            while (numFirst % numSecond) {
+                numFirst = numFirst % numSecond;
+                swap(numFirst, numSecond);
             }
+            r.nominator = r.nominator / numSecond;
+            r.denominator = r.denominator / numSecond;
+        } else {
+            r.denominator = 1;
         }
     }
+
 
     static void Check(Rational &r) {
         if (r.denominator < 0){
@@ -742,10 +759,33 @@ bool operator!=(const Rational &left, const Rational &right) {
     return !(left == right);
 }
 
+#include <cstdlib>
+#include <ctime>
 
 int main() {
-    BigInteger a, b;
-    cin >> a >> b;
-    cout << a * b;
+
+    srand(time(nullptr) / 2);
+    long long i=0;
+    while (i < 100000000){
+        ++i;
+        int p = rand(), q = rand(), r = rand(), s = rand();
+        if (rand() % 2) p = -p;
+        if (rand() % 2) r = -r;
+        cout << p << " " << q << endl;
+        cout << r << " " << s << endl;
+        if (q == 0) q = 1;
+        if (s == 0) s = 1;
+        Rational a(p, q), b(r, s), c;
+        //Rational a, b, c;
+        //cin >> a >> b;
+        c = a + b;
+        c = a - b;
+        c = a * b;
+        if (b == 0) continue;
+        else c = a / b;
+        a.asDecimal(rand() % 100);
+        b.asDecimal(rand() % 100);
+        a > b;
+    }
     return 0;
 }
