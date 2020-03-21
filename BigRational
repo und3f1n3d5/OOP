@@ -237,20 +237,20 @@ BigInteger &BigInteger::operator+=(const BigInteger &right) {
     a.is_positive = true;
     b.is_positive = true;
     if (this->is_positive && right.is_positive) {
+        *this = Plus(a, b);
         this->is_positive = true;
-        *this = Plus(a, b);
     }
-    if (!this->is_positive && !right.is_positive){
+    else if (!this->is_positive && !right.is_positive){
+        *this = Plus(a, b);
         this->is_positive = false;
-        *this = Plus(a, b);
     }
-    if (this->is_positive && !right.is_positive){
-        this->is_positive = (b < *this);
+    else if (this->is_positive && !right.is_positive){
         *this = Minus(a, b);
+        this->is_positive = (b <= a);
     }
-    if (!this->is_positive && right.is_positive){
-        this->is_positive = (a > right);
+    else if (!this->is_positive && right.is_positive){
         *this = Minus(a, b);
+        this->is_positive = (a <= b);
     }
     this->zeroCheck();
     return *this;
@@ -368,8 +368,9 @@ BigInteger operator*(const BigInteger &left, const BigInteger &right) {
 
 BigInteger &BigInteger::operator*=(const BigInteger &right) {
     if (this->data.size() == 1 && right.data.size() == 1){
+        bool k = (this->is_positive == right.is_positive);
         *this = BigInteger(to_string(this->data[0] * right.data[0]));
-        this->is_positive = (this->is_positive == right.is_positive);
+        this->is_positive = k;
         return *this;
     }
     if (this->data.empty() || right.data.empty() || *this == 0 || right == 0) {
@@ -384,7 +385,7 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
         *this = Multiply(tmp, *this);
         return *this;
     }
-    bool k = (this->is_positive && right.is_positive) || (!this->is_positive && !right.is_positive);
+    bool k = (this->is_positive == right.is_positive);
     BigInteger A0, B0;
     for (size_t i=0; i < this->data.size() / 2; ++i){
         A0.data.push_back(this->data[i]);
@@ -480,6 +481,7 @@ BigInteger &BigInteger::operator%=(const BigInteger &right) {
 bool operator!=(const BigInteger &left, const BigInteger &right) {
     return !(left == right);
 }
+
 
 
 
@@ -579,19 +581,19 @@ public:
 
     string asDecimal(size_t precision = 0) const {
         string s;
-        s = (this->nominator / this->denominator).toString() + ',';
+        s = (this->nominator / this->denominator).toString() + '.';
         BigInteger left = BigInteger::abs1(this->nominator) % this->denominator;
         for (size_t i=0; i <= precision; ++i){
             s += ((left * 10) / this->denominator).toString();
             left *= 10;
             left %= this->denominator;
         }
-        if (s[s.size() - 2] == ','){
-            if ((BigInteger) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
+        if (s[s.size() - 2] == '.'){
+            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
             s.erase(s.size() - 2, 2);
         }
         else{
-            if ((BigInteger) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1;
+            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1; // change : 9
             s.erase(s.size() - 1);
         }
         if (this->nominator < 0 && s[0] != '-') s = '-' + s;
@@ -766,26 +768,24 @@ int main() {
 
     srand(time(nullptr) / 2);
     long long i=0;
-    while (i < 100000000){
+    while (i < 10000){
         ++i;
-        int p = rand(), q = rand(), r = rand(), s = rand();
+        long double p = rand() % 100, q = rand() % 100, r = rand() % 100, s = rand() % 100;
         if (rand() % 2) p = -p;
         if (rand() % 2) r = -r;
-        cout << p << " " << q << endl;
-        cout << r << " " << s << endl;
         if (q == 0) q = 1;
         if (s == 0) s = 1;
-        Rational a(p, q), b(r, s), c;
+        Rational a((int) p, (int) q), b((int) r, (int) s), c;
+        double k = p/q, m = r/s;
         //Rational a, b, c;
         //cin >> a >> b;
-        c = a + b;
-        c = a - b;
-        c = a * b;
-        if (b == 0) continue;
-        else c = a / b;
-        a.asDecimal(rand() % 100);
-        b.asDecimal(rand() % 100);
-        a > b;
+        c = a+b;
+        if ((a+b).asDecimal(6) != to_string(k+m)) {
+            cout << p << " " << q << " " << r  << " " << s << endl;
+            cout << (a+b).asDecimal(6) << " " << to_string(k+m) << endl;
+        }
     }
     return 0;
 }
+
+//-42 72 12 15
