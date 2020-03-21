@@ -581,20 +581,23 @@ public:
 
     string asDecimal(size_t precision = 0) const {
         string s;
-        s = (this->nominator / this->denominator).toString() + '.';
-        BigInteger left = BigInteger::abs1(this->nominator) % this->denominator;
+        BigInteger q = 10;
+        for (size_t i=0; i < precision; ++i){
+            q *= 10;
+        }
+        Rational r(5, q);
+        if (0 > *this) r = -r;
+        r += *this;
+        s = (r.nominator / r.denominator).toString() + ',';
+        BigInteger left = BigInteger::abs1(r.nominator) % r.denominator;
         for (size_t i=0; i <= precision; ++i){
-            s += ((left * 10) / this->denominator).toString();
+            s += ((left * 10) / r.denominator).toString();
             left *= 10;
-            left %= this->denominator;
+            left %= r.denominator;
         }
-        if (s[s.size() - 2] == '.'){
-            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 3] += 1;
-            s.erase(s.size() - 2, 2);
-        }
-        else{
-            if ((int) s[s.size() - 1] - '0' >= 5) s[s.size() - 2] += 1; // change : 9
-            s.erase(s.size() - 1);
+        s.erase(s.size() - 1, 1);
+        if (s[s.size() - 1] == ',') {
+            s.erase(s.size() - 1, 1);
         }
         if (this->nominator < 0 && s[0] != '-') s = '-' + s;
         return s;
@@ -779,8 +782,8 @@ int main() {
         double k = p/q, m = r/s;
         //Rational a, b, c;
         //cin >> a >> b;
-        c = a+b;
-        if ((a+b).asDecimal(6) != to_string(k+m)) {
+        c = a-b;
+        if ((a/b).asDecimal(5) != to_string(k+m)) {
             cout << p << " " << q << " " << r  << " " << s << endl;
             cout << (a+b).asDecimal(6) << " " << to_string(k+m) << endl;
         }
