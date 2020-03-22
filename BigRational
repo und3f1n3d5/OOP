@@ -116,6 +116,7 @@ private:
             }
             a.data = tmp;
         }
+        a.zeroCheck();
         return a;
     }
 
@@ -130,7 +131,7 @@ public:
             if (i == '-') continue;
             data.push_back((int) i - '0');
         }
-        zeroCheck();
+        this->zeroCheck();
     }
 
     BigInteger(const int &j) {
@@ -144,7 +145,21 @@ public:
         for (size_t i=0; i < data.size()/2; ++i) {
             swap(data[i], data[data.size() - i - 1]);
         }
-        zeroCheck();
+        this->zeroCheck();
+    }
+
+    BigInteger(const long long int &j) {
+        is_positive = (j >= 0);
+        int res = abs(j);
+        while (res > 0){
+            data.push_back(res % 10);
+            res /= 10;
+        }
+        if (data.empty()) data.push_back(0);
+        for (size_t i=0; i < data.size()/2; ++i) {
+            swap(data[i], data[data.size() - i - 1]);
+        }
+        this->zeroCheck();
     }
 
     ~BigInteger() {
@@ -157,12 +172,12 @@ public:
         return res;
     }
 
-    virtual explicit operator bool () const {
+    explicit operator bool () const {
         vector <int> z(1, 0);
         return !(this->data == z);
     }
 
-    virtual string toString() const {
+    string toString() const {
         string s = (this->is_positive ? "" : "-" );
         for(int i : this->data)
             s += (to_string(i));
@@ -309,7 +324,7 @@ bool operator>(const BigInteger &left, const BigInteger &right) {
         return false;
     }
     else{
-        if (!right.is_positive) return false;
+        if (right.is_positive) return false;
         if (right.data.size() < left.data.size()) return false;
         if (left.data.size() < right.data.size()) return true;
         for (size_t i=0; i < left.data.size(); ++i){
@@ -371,6 +386,7 @@ BigInteger &BigInteger::operator*=(const BigInteger &right) {
         bool k = (this->is_positive == right.is_positive);
         *this = BigInteger(to_string(this->data[0] * right.data[0]));
         this->is_positive = k;
+        this->zeroCheck();
         return *this;
     }
     if (this->data.empty() || right.data.empty() || *this == 0 || right == 0) {
@@ -470,10 +486,6 @@ BigInteger operator%(const BigInteger &left, const BigInteger &right) {
 BigInteger &BigInteger::operator%=(const BigInteger &right) {
     BigInteger res;
     *this -= (*this / right) * right;
-    if (!this->is_positive) {
-        res = res + right;
-    }
-    this->is_positive = true;
     this->zeroCheck();
     return *this;
 }
@@ -588,7 +600,7 @@ public:
         Rational r(5, q);
         if (0 > *this) r = -r;
         r += *this;
-        s = (r.nominator / r.denominator).toString() + ',';
+        s = (r.nominator / r.denominator).toString() + '.';
         BigInteger left = BigInteger::abs1(r.nominator) % r.denominator;
         for (size_t i=0; i <= precision; ++i){
             s += ((left * 10) / r.denominator).toString();
@@ -596,11 +608,15 @@ public:
             left %= r.denominator;
         }
         s.erase(s.size() - 1, 1);
-        if (s[s.size() - 1] == ',') {
+        if (s[s.size() - 1] == '.') {
             s.erase(s.size() - 1, 1);
         }
         if (this->nominator < 0 && s[0] != '-') s = '-' + s;
         return s;
+    }
+
+    explicit operator double () const {
+
     }
 };
 
@@ -768,25 +784,248 @@ bool operator!=(const Rational &left, const Rational &right) {
 #include <ctime>
 
 int main() {
+    long long j=0;
+    while (j < 1000000){
+        ++j;
+        srand(time(nullptr) / 2);
 
-    srand(time(nullptr) / 2);
-    long long i=0;
-    while (i < 10000){
-        ++i;
-        long double p = rand() % 100, q = rand() % 100, r = rand() % 100, s = rand() % 100;
+        long long int a1, b1;
+        string s1, s2;
+        bool u;
+        BigInteger a, b;
+        long double p, q, r, s;
+        Rational c, d;
+        long double k, m;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        s1 = (a + b).toString();
+        s2 = to_string(a1 + b1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI +" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        s1 = (a - b).toString();
+        s2 = to_string(a1 - b1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI -" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        s1 = (a * b).toString();
+        s2 = to_string(a1 * b1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI *" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        if (b1 == 0) b1 = 1;
+        a = a1;
+        b = BigInteger(b1);
+        s1 = (a / b).toString();
+        s2 = to_string(a1 / b1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI /" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        if (b1 == 0) b1 = 1;
+        a = a1;
+        b = BigInteger(b1);
+        s1 = (a % b).toString();
+        s2 = to_string(a1 % b1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI %" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        a = b++;
+        a1 = b1++;
+        s1 = (a).toString();
+        s2 = to_string(a1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI++" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        a = ++b;
+        a1 = ++b1;
+        s1 = a.toString();
+        s2 = to_string(a1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "++BI" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        a = b--;
+        a1 = b1--;
+        s1 = a.toString();
+        s2 = to_string(a1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "BI--" << endl;
+
+        a1 = rand() % 1000000;
+        b1 = rand() % 1000000;
+        if (rand() % 2 == 0) a1 = -a1;
+        if (rand() % 2 == 0) b1 = -b1;
+        a = a1;
+        b = BigInteger(b1);
+        a = --b;
+        a1 = --b1;
+        s1 = a.toString();
+        s2 = to_string(a1);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "--BI" << endl;
+
+        p = rand() % 10000;
+        q = rand() % 10000;
+        r = rand() % 10000;
+        s = rand() % 10000;
         if (rand() % 2) p = -p;
         if (rand() % 2) r = -r;
         if (q == 0) q = 1;
         if (s == 0) s = 1;
-        Rational a((int) p, (int) q), b((int) r, (int) s), c;
-        double k = p/q, m = r/s;
-        //Rational a, b, c;
-        //cin >> a >> b;
-        c = a-b;
-        if ((a/b).asDecimal(5) != to_string(k+m)) {
-            cout << p << " " << q << " " << r  << " " << s << endl;
-            cout << (a+b).asDecimal(6) << " " << to_string(k+m) << endl;
+        k = p/q;
+        m = r/s;
+        c = Rational((int) p, (int) q);
+        d = Rational((int) r, (int) s);
+        s1 = (c + d).asDecimal(6);
+        s2 = to_string(k + m);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
         }
+        if (!u) cout << "Ra +" << endl;
+
+        p = rand() % 10000;
+        q = rand() % 10000;
+        r = rand() % 10000;
+        s = rand() % 10000;
+        if (rand() % 2) p = -p;
+        if (rand() % 2) r = -r;
+        if (q == 0) q = 1;
+        if (s == 0) s = 1;
+        k = p/q;
+        m = r/s;
+        c = Rational((int) p, (int) q);
+        d = Rational((int) r, (int) s);
+        s1 = (c - d).asDecimal(6);
+        s2 = to_string(k - m);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "Ra -" << endl;
+
+        p = rand() % 10000;
+        q = rand() % 10000;
+        r = rand() % 10000;
+        s = rand() % 10000;
+        if (rand() % 2) p = -p;
+        if (rand() % 2) r = -r;
+        if (q == 0) q = 1;
+        if (s == 0) s = 1;
+        k = p/q;
+        m = r/s;
+        c = Rational((int) p, (int) q);
+        d = Rational((int) r, (int) s);
+        s1 = (c * d).asDecimal(6);
+        s2 = to_string(k * m);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "Ra *" << endl;
+
+        p = rand() % 10000;
+        q = rand() % 10000;
+        r = rand() % 10000;
+        s = rand() % 10000;
+        if (rand() % 2) p = -p;
+        if (rand() % 2) r = -r;
+        if (q == 0) q = 1;
+        if (s == 0) s = 1;
+        if (r == 0) r = 1;
+        k = p/q;
+        m = r/s;
+        c = Rational((int) p, (int) q);
+        d = Rational((int) r, (int) s);
+        s1 = (c / d).asDecimal(6);
+        s2 = to_string(k / m);
+        u = true;
+        if (s1.size() != s2.size()) u = false;
+        for (int i=0; i < min(s1.size(), s2.size()); ++i){
+            if (s1[i] != s2[i]) u = false;
+        }
+        if (!u) cout << "Ra /" << endl << s1 << " " << s2;
     }
     return 0;
 }
