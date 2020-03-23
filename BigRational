@@ -148,23 +148,6 @@ public:
         this->zeroCheck();
     }
 
-    BigInteger(const long long int &j) {
-        is_positive = (j >= 0);
-        int res = abs(j);
-        while (res > 0){
-            data.push_back(res % 10);
-            res /= 10;
-        }
-        if (data.empty()) data.push_back(0);
-        for (size_t i=0; i < data.size()/2; ++i) {
-            swap(data[i], data[data.size() - i - 1]);
-        }
-        this->zeroCheck();
-    }
-
-    ~BigInteger() {
-        data.clear();
-    }
 
     static BigInteger abs1(const BigInteger& a){
         BigInteger res = a;
@@ -193,9 +176,9 @@ public:
     BigInteger &operator%=(const BigInteger &right);
 
     const BigInteger operator--(int);
-    BigInteger operator--();
+    BigInteger& operator--();
     const BigInteger operator++(int);
-    BigInteger operator++();
+    BigInteger& operator++();
 
     BigInteger operator-();
     BigInteger operator+() const;
@@ -303,9 +286,10 @@ BigInteger &BigInteger::operator=(const BigInteger &right) {
 }
 
 BigInteger BigInteger::operator-() {
-    this->is_positive = !this->is_positive;
-    this->zeroCheck();
-    return *this;
+    BigInteger res = *this;
+    res.is_positive = !this->is_positive;
+    res.zeroCheck();
+    return res;
 }
 
 bool operator==(const BigInteger &left, const BigInteger &right) {
@@ -347,8 +331,8 @@ bool operator>=(const BigInteger &left, const BigInteger &right) {
     return left == right || left > right;
 }
 
-BigInteger BigInteger::operator++() {
-    return *this + 1;
+BigInteger& BigInteger::operator++() {
+    return *this += 1;
 }
 
 const BigInteger BigInteger::operator++(int){
@@ -358,8 +342,8 @@ const BigInteger BigInteger::operator++(int){
     return oldValue;
 }
 
-BigInteger BigInteger::operator--() {
-    return *this - 1;
+BigInteger& BigInteger::operator--() {
+    return *this -= 1;
 }
 
 const BigInteger BigInteger::operator--(int) {
@@ -499,7 +483,7 @@ bool operator!=(const BigInteger &left, const BigInteger &right) {
 
 /*/////////////////////////////////////////////////////////////////////////////////////
 
-                                Rational
+                                 Rational
 
 /////////////////////////////////////////////////////////////////////////////////////*/
 
@@ -564,6 +548,7 @@ public:
         denominator = 1;
     }
 
+
     explicit operator bool () const {
         return this->nominator != 0;
     }
@@ -582,9 +567,9 @@ public:
 
 
     const Rational operator--(int);
-    Rational operator--();
+    Rational& operator--();
     const Rational operator++(int);
-    Rational operator++();
+    Rational& operator++();
 
     Rational operator-();
     Rational operator+() const;
@@ -616,7 +601,21 @@ public:
     }
 
     explicit operator double () const {
-
+        string s = this->asDecimal(7);
+        double res = 0;
+        size_t i=0;
+        if (s[0] == '-') ++i;
+        for (; i < s.size() && s[i] != ','; ++i){
+            res = res*10 + (int) s[i] - '0';
+        }
+        double k=10;
+        if (s[i] == ',') ++i;
+        for (; i < s.size(); ++i) {
+            res += ((int) s[i] - '0') / k;
+            k *= 10;
+        }
+        if (s[0] == '-') res = -res;
+        return res;
     }
 };
 
@@ -702,9 +701,10 @@ Rational &Rational::operator=(const Rational &right) {
 }
 
 Rational Rational::operator-() {
-    this->nominator = -this->nominator;
-    Check(*this);
-    return *this;
+    Rational res = *this;
+    res.nominator = -this->nominator;
+    Check(res);
+    return res;
 }
 
 bool operator==(const Rational &left, const Rational &right) {
@@ -727,8 +727,8 @@ bool operator>=(const Rational &left, const Rational &right) {
     return left == right || left > right;
 }
 
-Rational Rational::operator++() {
-    return *this + 1;
+Rational& Rational::operator++() {
+    return *this += 1;
 }
 
 const Rational Rational::operator++(int){
@@ -738,8 +738,8 @@ const Rational Rational::operator++(int){
     return oldValue;
 }
 
-Rational Rational::operator--() {
-    return *this - 1;
+Rational& Rational::operator--() {
+    return *this -= 1;
 }
 
 const Rational Rational::operator--(int) {
@@ -780,11 +780,7 @@ bool operator!=(const Rational &left, const Rational &right) {
     return !(left == right);
 }
 
-#include <cstdlib>
-#include <ctime>
-
-int main() {
-    long long j=0;
+/*long long j=0;
     while (j < 1000000){
         ++j;
         srand(time(nullptr) / 2);
@@ -1026,8 +1022,5 @@ int main() {
             if (s1[i] != s2[i]) u = false;
         }
         if (!u) cout << "Ra /" << endl << s1 << " " << s2;
-    }
-    return 0;
-}
-
+    }*/
 //-42 72 12 15
