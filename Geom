@@ -210,7 +210,7 @@ public:
             for (int i = 0; i < this->vertices.size(); ++i) {
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
-                double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n], 
+                double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
                         this->vertices[(i + 2) % n]);
                 double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
                         this->vertices[(i + 2) % n]);
@@ -220,12 +220,39 @@ public:
         }
         return ans;
     }
-    
-    bool containsPoint(Point point) override;
-    
-    bool isSimilarTo(const Polygon& another);
 
-    Polygon rotate(Point center, double angle);
+    bool containsPoint(Point point) override;
+
+    bool isSimilarTo(const Polygon& another){
+        bool ans = true;
+        if (this->vertices.size() != another.vertices.size()) return false;
+        int n = vertices.size();
+        for (int k=0; k < n; ++k) {
+            for (int i = 0; i < this->vertices.size(); ++i) {
+                double m = 0;
+                double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
+                double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
+                double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
+                                        this->vertices[(i + 2) % n]);
+                double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
+                                        this->vertices[(i + 2) % n]);
+                ans = ((a/b == m || m == 0) && c == d);
+                m = a/b;
+                if (!ans) break;
+            }
+        }
+        return ans;
+    }
+
+    Polygon rotate(Point c, double angle){
+        Polygon res;
+        for (Point p : vertices){
+            res.vertices.emplace_back(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
+                    c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
+        }
+        return res;
+    }
+    
     Polygon reflex(Point center);
     Polygon reflex(Line axis);
     Polygon scale(Point center, double coefficient);
@@ -234,6 +261,24 @@ public:
 
 
 class Rectangle : Polygon{
+private:
+    vector <Point> vertices;
+
+public:
+
+    Rectangle() = default;
+
+    Rectangle(vector <Point> &vert){
+        vertices = vert;
+    }
+
+    Rectangle(const Point& A, const Point& B, const Point& C, const Point& D) {
+        vertices.push_back(A);
+        vertices.push_back(B);
+        vertices.push_back(C);
+        vertices.push_back(D);
+    }
+
     virtual Point center();
     virtual pair<Line, Line> diagonals();
 };
@@ -258,7 +303,6 @@ public:
         vertices = vert;
     }
 
-    template<typename... T>
     Triangle(const Point& A, const Point& B, const Point& C) {
         vertices.push_back(A);
         vertices.push_back(B);
@@ -298,12 +342,25 @@ bool Polygon::containsPoint(Point point) {
 
 
 class Square : Rectangle{
+private:
+    vector <Point> vertices;
+
+public:
+
+    Square(vector <Point> &vert){
+        vertices = vert;
+    }
+
+    Square(const Point& A, const Point& B, const Point& C, const Point& D) {
+        vertices.push_back(A);
+        vertices.push_back(B);
+        vertices.push_back(C);
+        vertices.push_back(D);
+    }
+
     Circle circumscribedCircle();
     Circle inscribedCircle();
 };
-
-
-
 
 
 int main() {
