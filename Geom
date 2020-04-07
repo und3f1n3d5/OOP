@@ -1,15 +1,34 @@
 #include <iostream>
+#include <vector>
+#include <cmath>
 
 const double INF = 1e9;
+const double PI = M_PI;
+
+using namespace std;
 
 struct Point{
     double x, y;
 
     Point &operator=(const Point &right);
 
+    Point(){
+        x = 0;
+        y = 0;
+    }
+
     Point(double a, double b){
         x = a;
         y = b;
+    }
+
+    static double dist(const Point& A, const Point& B){
+        return sqrt(pow(A.x - B.x, 2) + pow(A.y - B.y, 2));
+    }
+
+    static double angle(const Point& A, const Point& B, const Point& C){
+        double ax = A.x - B.x, ay = A.y - B.y, bx = C.x - B.y, by = C.y - B.y;
+        return acos((ax*bx + ay*by) / (dist(A, B) * dist(B, C)));
     }
 };
 
@@ -31,13 +50,13 @@ Point &Point::operator=(const Point &right) {
 }
 
 
-
 class Line{
 private:
     double a{}, b{}, c{};
     double k{}, p{};
 
 public:
+    Line() = default;
 
     Line &operator=(const Line &right);
 
@@ -88,6 +107,26 @@ public:
     double get_p() const {
         return p;
     }
+    
+    static bool is_crossing(const Line& L, const Line& M){
+        return L.k != M.k;
+    }
+
+    static Point cross(const Line& L, const Line& M){
+        if (is_crossing(L, M)){
+            double x = (M.k != 0) ? (L.k + L.p - M.p) / M.k : (M.k + M.p - L.p) / L.k;
+            return Point(x, L.k * x + L.p);
+        }
+        throw exception();
+    } 
+
+    static double angle(const Line& L, const Line& M){
+        if (!is_crossing(L, M)){
+            return 0;
+        }
+        Point A(-L.c/L.a, -L.c/L.b), C(-M.c/M.a, -M.c/M.b), B = cross(L, M);
+        return min(Point::angle(A, B, C), PI - Point::angle(A, B, C));
+    }
 };
 
 
@@ -111,16 +150,159 @@ Line &Line::operator=(const Line &right){
     return *this;
 }
 
+
 class Shape{
-    virtual double perimeter();
-    virtual double area();
-    virtual bool isCongruentTo(const Shape& another);
-    virtual bool containsPoint(Point point);
-    virtual Shape rotate(Point center, double angle);
-    virtual Shape reflex(Point center);
-    virtual Shape reflex(Line axis);
-    virtual Shape scale(Point center, double coefficient);
+    virtual double perimeter() = 0;
+    virtual double area() = 0;
+    virtual bool containsPoint(Point point) = 0;
+    virtual bool operator==(const Shape& another){
+        return false;
+    }
+    virtual bool operator!=(const Shape& another){
+        return !(*this == another);
+    };
+    //virtual ~Shape() = 0;
 };
+
+class Polygon : Shape{
+private:
+    vector <Point> vertices;
+
+public:
+    Polygon(vector <Point> &vert){
+        vertices = vert;
+    }
+
+    template<typename... T>
+    Polygon(const T&... args) {
+        for (auto&& p : initializer_list<Point>{args...})
+            vertices.push_back(p);
+    }
+
+    virtual int verticesCount(){
+        return vertices.size();
+    }
+
+    virtual vector<Point> getVertices(){
+        return vertices;
+    }
+
+    bool operator==(const Polygon& another){
+        return this->vertices == another.vertices;
+    }
+
+    double perimeter() override{
+        double res = 0;
+        for (int i=0; i < vertices.size(); ++i){
+            if (i == 0) res += Point::dist(vertices[i], vertices[vertices.size() - 1]);
+            else res += Point::dist(vertices[i], vertices[i - 1]);
+        }
+        return res;
+    };
+
+    double area() override;
+
+    bool isCongruentTo(const Polygon& another){
+        bool ans = true;
+        if (this->vertices.size() != another.vertices.size()) return false;
+        int n = vertices.size();
+        for (int k=0; k < n; ++k) {
+            for (int i = 0; i < this->vertices.size(); ++i) {
+                double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
+                double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
+                double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n], 
+                        this->vertices[(i + 2) % n]);
+                double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
+                        this->vertices[(i + 2) % n]);
+                ans = (a == b && c == d);
+                if (!ans) break;
+            }
+        }
+        return ans;
+    }
+    
+    bool containsPoint(Point point) override;
+    
+    bool isSimilarTo(const Polygon& another);
+
+    Polygon rotate(Point center, double angle);
+    Polygon reflex(Point center);
+    Polygon reflex(Line axis);
+    Polygon scale(Point center, double coefficient);
+};
+
+
+
+class Rectangle : Polygon{
+    virtual Point center();
+    virtual pair<Line, Line> diagonals();
+};
+
+class Ellipse : Shape{
+    virtual pair<Line, Line> directrices();
+    virtual pair<Point,Point> focuses();
+};
+
+
+class Circle : Ellipse{
+    double radius();
+};
+
+
+class Triangle : Polygon{
+private:
+    vector <Point> vertices;
+
+public:
+    Triangle(vector <Point> &vert){
+        vertices = vert;
+    }
+
+    template<typename... T>
+    Triangle(const Point& A, const Point& B, const Point& C) {
+        vertices.push_back(A);
+        vertices.push_back(B);
+        vertices.push_back(C);
+    }
+
+    Circle circumscribedCircle();
+    Circle inscribedCircle();
+    Point centroid();
+    Point orthocenter();
+    Line EulerLine();
+    Circle ninePointsCircle();
+    
+    double area() final{
+        double angle = sin(Point::angle(vertices[0], vertices[1], vertices[2]));
+        return 0.5 * Point::dist(vertices[0], vertices[1]) * Point::dist(vertices[1], vertices[2]) * angle;
+    }
+};
+
+double Polygon::area() {
+    double res = 0;
+    for (int i=1; i < vertices.size() - 1; ++i){
+        Triangle T(vertices[0], vertices[i], vertices[i+1]);
+        res += T.area();
+    }
+    return res;
+}
+
+bool Polygon::containsPoint(Point point) {
+    double res = 0;
+    for (int i=0; i < vertices.size(); ++i){
+        Triangle T(point, vertices[i], vertices[(i+1) % vertices.size()]);
+        res += T.area();
+    }
+    return res == this->area();
+}
+
+
+class Square : Rectangle{
+    Circle circumscribedCircle();
+    Circle inscribedCircle();
+};
+
+
 
 
 
