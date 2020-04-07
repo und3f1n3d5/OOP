@@ -1,7 +1,11 @@
 #include <iostream>
 
+const double INF = 1e9;
+
 struct Point{
     double x, y;
+
+    Point &operator=(const Point &right);
 
     Point(double a, double b){
         x = a;
@@ -15,6 +19,96 @@ bool operator ==(const Point &a, const Point &b){
 
 bool operator !=(const Point &a, const Point &b){
     return !(a == b);
+}
+
+Point &Point::operator=(const Point &right) {
+    if (*this == right){
+        return *this;
+    }
+    this->x = right.x;
+    this->y = right.y;
+    return *this;
+}
+
+
+
+class Line{
+private:
+    double a{}, b{}, c{};
+    double k{}, p{};
+
+public:
+
+    Line &operator=(const Line &right);
+
+    Line(double x, double y, double z){
+        a = x;
+        b = y;
+        c = z;
+        k = (b == 0) ? INF : -a/b;
+        p = (b == 0) ? INF : -c/a;
+    }
+
+    Line(double n, double m){
+        k = n;
+        p = m;
+        a = k;
+        b = -1;
+        c = p;
+    }
+
+    Line(Point A, double x){
+        k = x;
+        a = k;
+        b = -1;
+        p = A.y - k * A.x;
+        c = p;
+    }
+
+    Line(Point A, Point B){
+        *this = Line(A.y - B.y, B.x - A.x, A.y * (A.x - B.x) + A.x * (B.y - A.y));
+    }
+
+    double get_a() const {
+        return a;
+    }
+
+    double get_b() const {
+        return b;
+    }
+
+    double get_c() const {
+        return c;
+    }
+
+    double get_k() const {
+        return k;
+    }
+
+    double get_p() const {
+        return p;
+    }
+};
+
+
+bool operator ==(const Line &A, const Line &B){
+    return (A.get_a() == B.get_a() && A.get_b() == B.get_b() && A.get_c() == B.get_c());
+}
+
+bool operator !=(const Line &a, const Line &b){
+    return !(a == b);
+}
+
+Line &Line::operator=(const Line &right){
+    if (*this == right){
+        return *this;
+    }
+    this->a = right.a;
+    this->b = right.b;
+    this->c = right.c;
+    this->k = right.k;
+    this->p = right.p;
+    return *this;
 }
 
 int main() {
