@@ -111,6 +111,19 @@ Line &Line::operator=(const Line &right){
     return *this;
 }
 
+class Shape{
+    virtual double perimeter();
+    virtual double area();
+    virtual bool isCongruentTo(const Shape& another);
+    virtual bool containsPoint(Point point);
+    virtual Shape rotate(Point center, double angle);
+    virtual Shape reflex(Point center);
+    virtual Shape reflex(Line axis);
+    virtual Shape scale(Point center, double coefficient);
+};
+
+
+
 int main() {
     std::cout << "Hello, World!" << std::endl;
     return 0;
