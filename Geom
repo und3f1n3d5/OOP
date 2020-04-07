@@ -1,0 +1,23 @@
+#include <iostream>
+
+struct Point{
+    double x, y;
+
+    Point(double a, double b){
+        x = a;
+        y = b;
+    }
+};
+
+bool operator ==(const Point &a, const Point &b){
+    return (a.x == b.x && a.y == b.y);
+}
+
+bool operator !=(const Point &a, const Point &b){
+    return !(a == b);
+}
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}
