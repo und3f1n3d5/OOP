@@ -200,7 +200,14 @@ public:
         return res;
     };
 
-    double area() override;
+    double area() override{
+        int n = vertices.size();
+        double res = vertices[0].y * vertices[n-1].x - vertices[0].x * vertices[n-1].y;
+        for (int i=0; i < vertices.size() - 1; ++i){
+            res = vertices[i].x * vertices[i+1].y - vertices[i].y * vertices[i+1].x;
+        }
+        return res/2;
+    }
 
     bool isCongruentTo(const Polygon& another){
         bool ans = true;
@@ -234,8 +241,8 @@ public:
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
                                         this->vertices[(i + 2) % n]);
-                double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
-                                        this->vertices[(i + 2) % n]);
+                double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
+                                        another.vertices[(i + 2 + k) % n]);
                 ans = ((a/b == m || m == 0) && c == d);
                 m = a/b;
                 if (!ans) break;
@@ -279,7 +286,25 @@ public:
         return res;
     }
 
-    Polygon scale(Point center, double coefficient);
+    Polygon scale(Point center, double k){
+        Polygon res;
+        for (Point p : vertices) {
+            res.vertices.emplace_back(k * (p.x - center.x) + center.x, k * (p.y - center.y) + center.y);
+        }
+        return res;
+    }
+
+    bool isConvex(){
+        bool ans = true;
+        int n = vertices.size();
+        for (int i = 0; i < this->vertices.size(); ++i) {
+            double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
+                    this->vertices[(i + 2) % n]);
+            ans = (c < PI);
+            if (!ans) break;
+        }
+        return ans;
+    }
 };
 
 
@@ -303,8 +328,13 @@ public:
         vertices.push_back(D);
     }
 
-    virtual Point center();
-    virtual pair<Line, Line> diagonals();
+    pair<Line, Line> diagonals(){
+        return make_pair(Line(vertices[0], vertices[1]), Line(vertices[1], vertices[3]));
+    }
+
+    Point center(){
+        return Line::cross(this->diagonals().first, this->diagonals().second);
+    }
 };
 
 class Ellipse : Shape{
@@ -346,14 +376,6 @@ public:
     }
 };
 
-double Polygon::area() {
-    double res = 0;
-    for (int i=1; i < vertices.size() - 1; ++i){
-        Triangle T(vertices[0], vertices[i], vertices[i+1]);
-        res += T.area();
-    }
-    return res;
-}
 
 bool Polygon::containsPoint(Point point) {
     double res = 0;
