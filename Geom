@@ -252,9 +252,33 @@ public:
         }
         return res;
     }
-    
-    Polygon reflex(Point center);
-    Polygon reflex(Line axis);
+
+    Polygon reflex(Point center){
+        Polygon res;
+        for (Point p : vertices){
+            res.vertices.emplace_back(2*center.x - p.x, 2*center.y - p.y);
+        }
+        return res;
+    }
+
+    Polygon reflex(Line L){
+        Polygon res;
+        for (Point p : vertices){
+            double x, y;
+            if (L.get_a() != 0) {
+                x = -(L.get_a() * p.x + 2 * L.get_b() * p.y - p.x * L.get_b() * L.get_b() / L.get_a()) /
+                           (L.get_a() + L.get_b() * L.get_b() / L.get_a());
+                y = L.get_b() / L.get_a() * (x - p.x) + p.y;
+            }
+            else{
+               x = p.x;
+               y = -(2*p.x*L.get_a()/L.get_b() + p.y);
+            }
+            res.vertices.emplace_back(x, y);
+        }
+        return res;
+    }
+
     Polygon scale(Point center, double coefficient);
 };
 
