@@ -337,14 +337,32 @@ public:
     }
 };
 
+
 class Ellipse : Shape{
+private:
+    pair <Point, Point> focues;
+    double a, b;
+
+public:
+
     virtual pair<Line, Line> directrices();
-    virtual pair<Point,Point> focuses();
+
+    virtual pair<Point,Point> focuses(){
+        return focues;
+    }
 };
 
 
 class Circle : Ellipse{
-    double radius();
+private:
+    Point center;
+    double rad;
+
+public:
+
+    double radius(){
+        return rad;
+    }
 };
 
 
