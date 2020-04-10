@@ -30,6 +30,7 @@ struct Point{
         double ax = A.x - B.x, ay = A.y - B.y, bx = C.x - B.y, by = C.y - B.y;
         return acos((ax*bx + ay*by) / (dist(A, B) * dist(B, C)));
     }
+
 };
 
 bool operator ==(const Point &a, const Point &b){
@@ -130,6 +131,34 @@ public:
 };
 
 
+void rotate(Point &p, const Point& c, double angle) {
+    p = Point(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
+               c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
+}
+
+void reflex(Point &p, const Point& c) {
+    p = Point(2*c.x - p.x, 2*c.y - p.y);
+}
+
+void reflex(Point &p, Line L) {
+    double x, y;
+    if (L.get_a() != 0) {
+        x = -(L.get_a() * p.x + 2 * L.get_b() * p.y - p.x * L.get_b() * L.get_b() / L.get_a()) /
+            (L.get_a() + L.get_b() * L.get_b() / L.get_a());
+        y = L.get_b() / L.get_a() * (x - p.x) + p.y;
+    }
+    else{
+    x = p.x;
+    y = -(2*p.x*L.get_a()/L.get_b() + p.y);
+    }
+    p = Point(x, y);
+}
+
+void scale(Point &p, const Point& c, double k) {
+    p = Point(k * (p.x - c.x) + c.x, k * (p.y - c.y) + c.y);
+}
+
+
 bool operator ==(const Line &A, const Line &B){
     return (A.get_a() == B.get_a() && A.get_b() == B.get_b() && A.get_c() == B.get_c());
 }
@@ -160,7 +189,12 @@ class Shape{
     }
     virtual bool operator!=(const Shape& another){
         return !(*this == another);
-    };
+    }
+
+    virtual void rotate(const Point& center, double angle) = 0;
+    virtual void reflex(const Point& center) = 0;
+    virtual void reflex(const Line& axis) = 0;
+    virtual void scale(const Point& center, double coefficient) = 0;
     //virtual ~Shape() = 0;
 };
 
@@ -251,47 +285,28 @@ public:
         return ans;
     }
 
-    Polygon rotate(Point c, double angle){
-        Polygon res;
+    void rotate(const Point& c, double angle) override {
         for (Point p : vertices){
-            res.vertices.emplace_back(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
-                    c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
+            ::rotate(p, c, angle);
         }
-        return res;
     }
 
-    Polygon reflex(Point center){
-        Polygon res;
+    void reflex(const Point& center) override {
         for (Point p : vertices){
-            res.vertices.emplace_back(2*center.x - p.x, 2*center.y - p.y);
+            ::reflex(p, center);
         }
-        return res;
     }
 
-    Polygon reflex(Line L){
-        Polygon res;
+    void reflex(const Line& L) override {
         for (Point p : vertices){
-            double x, y;
-            if (L.get_a() != 0) {
-                x = -(L.get_a() * p.x + 2 * L.get_b() * p.y - p.x * L.get_b() * L.get_b() / L.get_a()) /
-                           (L.get_a() + L.get_b() * L.get_b() / L.get_a());
-                y = L.get_b() / L.get_a() * (x - p.x) + p.y;
-            }
-            else{
-               x = p.x;
-               y = -(2*p.x*L.get_a()/L.get_b() + p.y);
-            }
-            res.vertices.emplace_back(x, y);
+            ::reflex(p, L);
         }
-        return res;
     }
 
-    Polygon scale(Point center, double k){
-        Polygon res;
+    void scale(const Point& center, double k) override {
         for (Point p : vertices) {
-            res.vertices.emplace_back(k * (p.x - center.x) + center.x, k * (p.y - center.y) + center.y);
+            ::scale(p, center, k);
         }
-        return res;
     }
 
     bool isConvex(){
@@ -405,6 +420,28 @@ public:
         return (this->a / another.a == this->b / another.b ==
                 Point::dist(this->focs.first, this->focs.second) / Point::dist(another.focs.first, another.focs.second));
     }
+
+    void rotate(const Point& c, double angle) override {
+        ::rotate(focs.first, c, angle);
+        ::rotate(focs.second, c, angle);
+    }
+
+    void reflex(const Point& c) override {
+        ::reflex(focs.first, c);
+        ::reflex(focs.second, c);
+    }
+
+    void reflex(const Line& L) override {
+        ::reflex(focs.first, L);
+        ::reflex(focs.second, L);
+    }
+
+    void scale(const Point& c, double k) override {
+        ::scale(focs.first, c, k);
+        ::scale(focs.second, c, k);
+        a = abs(a*k);
+        b = abs(b*k);
+    }
 };
 
 
@@ -448,33 +485,20 @@ public:
         return true;
     }
 
-    Circle rotate(Point c, double angle){
-        center = Point(c.x + (center.x - c.x)*cos(angle) - (center.y - c.y)*sin(angle),
-                c.y + (center.x - c.x)*sin(angle) - (center.y - c.y)*cos(angle));
-        return *this;
+    void rotate(const Point& c, double angle) final {
+        ::rotate(center, c, angle);
     }
 
-    Circle reflex(Point c){
-        center = Point(2*c.x - center.x, 2*c.y - center.y);
-        return *this;
+    void reflex(const Point& c) final {
+        ::reflex(center, c);
     }
 
-    void reflex(Line L){
-        double x, y;
-        if (L.get_a() != 0) {
-            x = -(L.get_a() * center.x + 2 * L.get_b() * center.y - center.x * L.get_b() * L.get_b() / L.get_a()) /
-                    (L.get_a() + L.get_b() * L.get_b() / L.get_a());
-            y = L.get_b() / L.get_a() * (x - center.x) + center.y;
-        }
-        else{
-            x = center.x;
-            y = -(2*center.x*L.get_a()/L.get_b() + center.y);
-        }
-        center = Point(x, y);
+    void reflex(const Line& L) final {
+        ::reflex(center, L);
     }
 
-    void scale(Point c, double k){
-        center = Point(k * (center.x - c.x) + c.x, k * (center.y - c.y) + c.y);
+    void scale(const Point& c, double k) final {
+        ::scale(center, c, k);
         rad = abs(k*rad);
     }
 };
@@ -543,7 +567,6 @@ public:
 
 
 int main() {
-    Circle(Point(0, 0), 1);
     std::cout << "Hello, World!" << std::endl;
     return 0;
 }
