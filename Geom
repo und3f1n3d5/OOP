@@ -338,17 +338,72 @@ public:
 };
 
 
+
+
 class Ellipse : Shape{
 private:
-    pair <Point, Point> focues;
-    double a, b;
+    pair <Point, Point> focs;
+    double a{}, b{}, exc{};
 
 public:
 
-    virtual pair<Line, Line> directrices();
+    Ellipse() = default;
+
+    Ellipse(const Point& A, const Point& B, double dist){
+        focs = make_pair(A, B);
+        a = dist/2;
+        b = sqrt(a*a - pow(Point::dist(A, B)/2, 2));
+        exc = sqrt(a*a - b*b)/a;
+    }
+
+    virtual Point centre(){
+        return Point((focs.first.x + focs.second.x)/2, (focs.first.x + focs.second.x)/2);
+    }
+
+    virtual pair<Line, Line> directrices(){
+        if (exc != 0){
+            Line axis(focs.first, focs.second);
+            double a1 = -axis.get_b(), b1 = axis.get_a();
+            Point c = centre();
+            double c1 = a/exc * sqrt(a1*a1 + b1*b1) - (a1*c.x + b1*c.y);
+            double c2 = a/exc * sqrt(a1*a1 + b1*b1) - (a1*c.x + b1*c.y);
+            return make_pair(Line(a1, b1, c1), Line(a1, b1, c2));
+        }
+        throw exception();
+    }
 
     virtual pair<Point,Point> focuses(){
-        return focues;
+        return focs;
+    }
+
+    double perimeter() override{
+        return 4*(PI*a*b + (a-b)*(a-b)) / (a + b);
+    }
+
+    double eccentricity(){
+        return exc;
+    }
+
+    double area() override{
+        return PI*a*b;
+    }
+
+    bool containsPoint(Point point) override{
+        return (2*a >= Point::dist(point, focs.first) + Point::dist(point, focs.second));
+    }
+
+    bool operator==(const Ellipse &another){
+        return (this->focs == another.focs && this->a == another.a && this->b == another.b);
+    }
+
+    bool isCongruentTo(const Ellipse& another) {
+        return (this->a == another.a && this->b == another.b &&
+            Point::dist(this->focs.first, this->focs.second) == Point::dist(another.focs.first, another.focs.second));
+    }
+
+    bool isSimilarTo(const Ellipse& another){
+        return (this->a / another.a == this->b / another.b ==
+                Point::dist(this->focs.first, this->focs.second) / Point::dist(another.focs.first, another.focs.second));
     }
 };
 
@@ -360,8 +415,67 @@ private:
 
 public:
 
+    Circle(const Point& A, double p){
+        center = A;
+        rad = p;
+    }
+
+    double area() final{
+        return PI*rad*rad;
+    }
+
     double radius(){
         return rad;
+    }
+
+    Point get_centre(){
+        return center;
+    }
+
+    bool containsPoint(Point point) final{
+        return (rad >= Point::dist(point, center));
+    }
+
+    bool operator == (const Circle &another){
+        return (this->center == another.center && this->rad == another.rad);
+    }
+
+    bool isCongruentTo(const Circle& another) {
+        return (this->rad == another.rad);
+    }
+
+    bool isSimilarTo(const Circle& another) {
+        return true;
+    }
+
+    Circle rotate(Point c, double angle){
+        center = Point(c.x + (center.x - c.x)*cos(angle) - (center.y - c.y)*sin(angle),
+                c.y + (center.x - c.x)*sin(angle) - (center.y - c.y)*cos(angle));
+        return *this;
+    }
+
+    Circle reflex(Point c){
+        center = Point(2*c.x - center.x, 2*c.y - center.y);
+        return *this;
+    }
+
+    void reflex(Line L){
+        double x, y;
+        if (L.get_a() != 0) {
+            x = -(L.get_a() * center.x + 2 * L.get_b() * center.y - center.x * L.get_b() * L.get_b() / L.get_a()) /
+                    (L.get_a() + L.get_b() * L.get_b() / L.get_a());
+            y = L.get_b() / L.get_a() * (x - center.x) + center.y;
+        }
+        else{
+            x = center.x;
+            y = -(2*center.x*L.get_a()/L.get_b() + center.y);
+        }
+        center = Point(x, y);
+    }
+
+    void scale(Point c, double k){
+        center = Point(k * (center.x - c.x) + c.x, k * (center.y - c.y) + c.y);
+        rad = abs(k*rad);
     }
 };
 
@@ -427,7 +541,9 @@ public:
 };
 
 
+
 int main() {
+    Circle(Point(0, 0), 1);
     std::cout << "Hello, World!" << std::endl;
     return 0;
 }
