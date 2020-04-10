@@ -519,7 +519,10 @@ public:
         vertices.push_back(C);
     }
 
-    Circle circumscribedCircle();
+    Circle circumscribedCircle(){
+        
+    }
+
     Circle inscribedCircle();
     Point centroid();
     Point orthocenter();
@@ -560,8 +563,15 @@ public:
         vertices.push_back(D);
     }
 
-    Circle circumscribedCircle();
-    Circle inscribedCircle();
+    Circle circumscribedCircle(){
+        Circle c(this->center(), Point::dist(this->center(), vertices[0]));
+        return c;
+    }
+
+    Circle inscribedCircle(){
+        Circle c(this->center(), Point::dist(this->vertices[0], this->vertices[1])/2);
+        return c;
+    }
 };
 
 
