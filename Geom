@@ -520,12 +520,34 @@ public:
     }
 
     Circle circumscribedCircle(){
-        
+        double x, y, d;
+        Point A=vertices[0], B=vertices[1], C=vertices[2];
+        d = 2*(A.x*(B.y-C.y)+B.x*(C.y-A.y)+C.x*(A.y-B.y));
+        x = ((A.x*A.x+A.y*A.y)*(B.y-C.y) + (B.x*B.x+B.y*B.y)*(C.y-A.y) + (C.x*C.x+C.y*C.y)*(A.y-B.y)) / d;
+        y = ((A.x*A.x+A.y*A.y)*(C.x-B.x) + (B.x*B.x+B.y*B.y)*(A.x-C.x) + (C.x*C.x+C.y*C.y)*(B.x-A.x)) / d;
+        Point ctr(x, y);
+        return Circle(ctr, Point::dist(ctr, A));
     }
 
-    Circle inscribedCircle();
-    Point centroid();
-    Point orthocenter();
+    Circle inscribedCircle(){
+        double r = 2 * this->area() / this->perimeter();
+        Point A=vertices[0], B=vertices[1], C=vertices[2];
+        double a = Point::dist(A, B), b = Point::dist(B, C), c = Point::dist(A, C);
+        double x, y;
+        x = (a*A.x + b*B.x + c*C.x) / (a + b + c);
+        y = (a*A.y + b*B.y + c*C.y) / (a + b + c);
+        return Circle(Point(x, y), r);
+    }
+
+    Point centroid() {
+        Point A=vertices[0], B=vertices[1], C=vertices[2];
+        return Point((A.x+B.x+C.x)/3, (A.y+B.y+C.y)/3);
+    }
+
+    Point orthocenter(){
+
+    }
+    
     Line EulerLine();
     Circle ninePointsCircle();
     
