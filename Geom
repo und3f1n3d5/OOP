@@ -128,6 +128,22 @@ public:
         Point A(-L.c/L.a, -L.c/L.b), C(-M.c/M.a, -M.c/M.b), B = cross(L, M);
         return min(Point::angle(A, B, C), PI - Point::angle(A, B, C));
     }
+
+    static double dist(const Point& A, const Line& L){
+        return abs(L.a*A.x + L.b*A.y + L.c) / sqrt(L.a*L.a + L.b*L.b);
+    }
+
+    Point get_perp(const Point& A) {
+        double x, y;
+        if (b == 0) {
+            x = -c/a;
+            y = A.y;
+            return Point(x, y);
+        }
+        y = (a * A.x - a*a/b * A.y + c) / (a*a/b + b);
+        x = A.x - a/b * (A.y - y);
+        return Point(x, y);
+    }
 };
 
 
@@ -545,11 +561,23 @@ public:
     }
 
     Point orthocenter(){
-
+        Point Ah = Line(vertices[1], vertices[2]).get_perp(vertices[0]);
+        Point Ch = Line(vertices[0], vertices[1]).get_perp(vertices[2]);
+        return Line::cross(Line(vertices[2], Ch), Line(vertices[0], Ah));
     }
-    
-    Line EulerLine();
-    Circle ninePointsCircle();
+
+    Circle ninePointsCircle(){
+        Point Am((vertices[1].x+vertices[2].x)/2, (vertices[1].y+vertices[2].y)/2);
+        Point Bm((vertices[0].x+vertices[2].x)/2, (vertices[0].y+vertices[2].y)/2);
+        Point Cm((vertices[1].x+vertices[0].x)/2, (vertices[1].y+vertices[0].y)/2);
+        Triangle T(Am, Bm, Cm);
+        return T.circumscribedCircle();
+    }
+
+    Line EulerLine(){
+        Point O1 = this->orthocenter(), O2 = this->ninePointsCircle().get_centre();
+        return Line(O1, O2);
+    }
     
     double area() final{
         double angle = sin(Point::angle(vertices[0], vertices[1], vertices[2]));
