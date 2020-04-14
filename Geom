@@ -197,6 +197,7 @@ Line &Line::operator=(const Line &right){
 
 
 class Shape{
+public:
     virtual double perimeter() = 0;
     virtual double area() = 0;
     virtual bool containsPoint(Point point) = 0;
@@ -204,9 +205,6 @@ class Shape{
     virtual void reflex(const Point& center) = 0;
     virtual void reflex(const Line& axis) = 0;
     virtual void scale(const Point& center, double coefficient) = 0;
-    //virtual ~Shape() = 0;
-
-public:
     virtual bool operator==(const Shape& another){
         return false;
     }
@@ -351,7 +349,6 @@ public:
 
     Rectangle(const Point &A, const Point &C, double k){
         double t = max(1/k, k);
-        double a2, b2;
         double x = (A.x + k * C.x) / (1 + t), y = (A.y + k * C.y) / (1 + t);
         Point B(x, y), D = B;
         ::reflex(D, Point((A.x+C.x)/2, (A.y+C.y)/2));
