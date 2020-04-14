@@ -108,7 +108,7 @@ public:
     double get_p() const {
         return p;
     }
-    
+
     static bool is_crossing(const Line& L, const Line& M){
         return L.k != M.k;
     }
@@ -119,7 +119,7 @@ public:
             return Point(x, L.k * x + L.p);
         }
         throw exception();
-    } 
+    }
 
     static double angle(const Line& L, const Line& M){
         if (!is_crossing(L, M)){
@@ -149,7 +149,7 @@ public:
 
 void rotate(Point &p, const Point& c, double angle) {
     p = Point(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
-               c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
+              c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
 }
 
 void reflex(Point &p, const Point& c) {
@@ -164,8 +164,8 @@ void reflex(Point &p, Line L) {
         y = L.get_b() / L.get_a() * (x - p.x) + p.y;
     }
     else{
-    x = p.x;
-    y = -(2*p.x*L.get_a()/L.get_b() + p.y);
+        x = p.x;
+        y = -(2*p.x*L.get_a()/L.get_b() + p.y);
     }
     p = Point(x, y);
 }
@@ -200,21 +200,22 @@ class Shape{
     virtual double perimeter() = 0;
     virtual double area() = 0;
     virtual bool containsPoint(Point point) = 0;
+    virtual void rotate(const Point& center, double angle) = 0;
+    virtual void reflex(const Point& center) = 0;
+    virtual void reflex(const Line& axis) = 0;
+    virtual void scale(const Point& center, double coefficient) = 0;
+    //virtual ~Shape() = 0;
+
+public:
     virtual bool operator==(const Shape& another){
         return false;
     }
     virtual bool operator!=(const Shape& another){
         return !(*this == another);
     }
-
-    virtual void rotate(const Point& center, double angle) = 0;
-    virtual void reflex(const Point& center) = 0;
-    virtual void reflex(const Line& axis) = 0;
-    virtual void scale(const Point& center, double coefficient) = 0;
-    //virtual ~Shape() = 0;
 };
 
-class Polygon : Shape{
+class Polygon : public Shape{
 private:
     vector <Point> vertices;
 
@@ -243,7 +244,7 @@ public:
 
     double perimeter() override{
         double res = 0;
-        for (int i=0; i < vertices.size(); ++i){
+        for (size_t i = 0; i < vertices.size(); ++i){
             if (i == 0) res += Point::dist(vertices[i], vertices[vertices.size() - 1]);
             else res += Point::dist(vertices[i], vertices[i - 1]);
         }
@@ -253,7 +254,7 @@ public:
     double area() override{
         int n = vertices.size();
         double res = vertices[0].y * vertices[n-1].x - vertices[0].x * vertices[n-1].y;
-        for (int i=0; i < vertices.size() - 1; ++i){
+        for (size_t i = 0; i < vertices.size() - 1; ++i){
             res = vertices[i].x * vertices[i+1].y - vertices[i].y * vertices[i+1].x;
         }
         return res/2;
@@ -264,13 +265,13 @@ public:
         if (this->vertices.size() != another.vertices.size()) return false;
         int n = vertices.size();
         for (int k=0; k < n; ++k) {
-            for (int i = 0; i < this->vertices.size(); ++i) {
+            for (size_t i = 0; i < this->vertices.size(); ++i) {
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
-                        this->vertices[(i + 2) % n]);
+                                        this->vertices[(i + 2) % n]);
                 double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
-                        this->vertices[(i + 2) % n]);
+                                        this->vertices[(i + 2) % n]);
                 ans = (a == b && c == d);
                 if (!ans) break;
             }
@@ -285,7 +286,7 @@ public:
         if (this->vertices.size() != another.vertices.size()) return false;
         int n = vertices.size();
         for (int k=0; k < n; ++k) {
-            for (int i = 0; i < this->vertices.size(); ++i) {
+            for (size_t i = 0; i < this->vertices.size(); ++i) {
                 double m = 0;
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
@@ -328,9 +329,9 @@ public:
     bool isConvex(){
         bool ans = true;
         int n = vertices.size();
-        for (int i = 0; i < this->vertices.size(); ++i) {
+        for (size_t i = 0; i < this->vertices.size(); ++i) {
             double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
-                    this->vertices[(i + 2) % n]);
+                                    this->vertices[(i + 2) % n]);
             ans = (c < PI);
             if (!ans) break;
         }
@@ -340,13 +341,22 @@ public:
 
 
 
-class Rectangle : Polygon{
+class Rectangle : public Polygon{
 private:
     vector <Point> vertices;
 
 public:
 
     Rectangle() = default;
+
+    Rectangle(const Point &A, const Point &C, double k){
+        double t = max(1/k, k);
+        double a2, b2;
+        double x = (A.x + k * C.x) / (1 + t), y = (A.y + k * C.y) / (1 + t);
+        Point B(x, y), D = B;
+        ::reflex(D, Point((A.x+C.x)/2, (A.y+C.y)/2));
+        vertices = {A, B, C, D};
+    }
 
     Rectangle(vector <Point> &vert){
         vertices = vert;
@@ -371,7 +381,7 @@ public:
 
 
 
-class Ellipse : Shape{
+class Ellipse : public Shape{
 private:
     pair <Point, Point> focs;
     double a{}, b{}, exc{};
@@ -429,11 +439,11 @@ public:
 
     bool isCongruentTo(const Ellipse& another) {
         return (this->a == another.a && this->b == another.b &&
-            Point::dist(this->focs.first, this->focs.second) == Point::dist(another.focs.first, another.focs.second));
+                Point::dist(this->focs.first, this->focs.second) == Point::dist(another.focs.first, another.focs.second));
     }
 
     bool isSimilarTo(const Ellipse& another){
-        return (this->a / another.a == this->b / another.b ==
+        return (this->a / another.a == this->b / another.b &&  this->b / another.b ==
                 Point::dist(this->focs.first, this->focs.second) / Point::dist(another.focs.first, another.focs.second));
     }
 
@@ -461,12 +471,14 @@ public:
 };
 
 
-class Circle : Ellipse{
+class Circle : public Ellipse{
 private:
     Point center;
     double rad;
 
 public:
+
+    Circle() = default;
 
     Circle(const Point& A, double p){
         center = A;
@@ -520,11 +532,13 @@ public:
 };
 
 
-class Triangle : Polygon{
+class Triangle : public Polygon{
 private:
     vector <Point> vertices;
 
 public:
+    Triangle() = default;
+
     Triangle(vector <Point> &vert){
         vertices = vert;
     }
@@ -578,7 +592,7 @@ public:
         Point O1 = this->orthocenter(), O2 = this->ninePointsCircle().get_centre();
         return Line(O1, O2);
     }
-    
+
     double area() final{
         double angle = sin(Point::angle(vertices[0], vertices[1], vertices[2]));
         return 0.5 * Point::dist(vertices[0], vertices[1]) * Point::dist(vertices[1], vertices[2]) * angle;
@@ -588,7 +602,7 @@ public:
 
 bool Polygon::containsPoint(Point point) {
     double res = 0;
-    for (int i=0; i < vertices.size(); ++i){
+    for (size_t i = 0; i < vertices.size(); ++i){
         Triangle T(point, vertices[i], vertices[(i+1) % vertices.size()]);
         res += T.area();
     }
@@ -596,14 +610,23 @@ bool Polygon::containsPoint(Point point) {
 }
 
 
-class Square : Rectangle{
+class Square : public Rectangle{
 private:
     vector <Point> vertices;
 
 public:
 
+    Square() = default;
+
     Square(vector <Point> &vert){
         vertices = vert;
+    }
+
+    Square(const Point &A, const Point &C){
+        vertices.emplace_back(A);
+        vertices.emplace_back(Point(A.x, C.y));
+        vertices.emplace_back(C);
+        vertices.emplace_back(Point(C.x, A.y));
     }
 
     Square(const Point& A, const Point& B, const Point& C, const Point& D) {
@@ -624,9 +647,3 @@ public:
     }
 };
 
-
-
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
-}
