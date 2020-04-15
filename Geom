@@ -269,6 +269,10 @@ public:
         return ans;
     }
 
+    bool operator!=(const Polygon& another){
+        return !(*this == another);
+    }
+
     double perimeter() override{
         double res = 0;
         for (size_t i = 0; i < vertices.size(); ++i){
@@ -391,13 +395,13 @@ public:
         }
     }
 
-    bool isConvex(){
+    bool isConvex() {
         bool ans = true;
         int n = vertices.size();
         for (size_t i = 0; i < this->vertices.size(); ++i) {
-            double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
-                                    this->vertices[(i + 2) % n]);
-            ans = (c < PI);
+            Line L(vertices[i], vertices[(i + 2) % n]);
+            ans = ((L.get_a() * vertices[(i + 1) % n].x + L.get_b() * vertices[(i + 1) % n].y + L.get_c()) *
+                    (L.get_a() * vertices[(i + 3) % n].x + L.get_b() * vertices[(i + 3) % n].y + L.get_c()) < 0);
             if (!ans) break;
         }
         return ans;
@@ -508,6 +512,10 @@ public:
 
     bool operator==(const Ellipse &another){
         return (this->focs == another.focs && this->a == another.a && this->b == another.b);
+    }
+
+    bool operator!=(const Ellipse& another){
+        return !(*this == another);
     }
 
     bool isCongruentTo(const Ellipse& another) {
