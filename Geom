@@ -7,6 +7,8 @@ const double PI = M_PI;
 
 using namespace std;
 
+//std::precision(7);
+
 struct Point{
     double x, y;
 
@@ -309,7 +311,7 @@ public:
                                         this->vertices[(i + 2) % n]);
                 double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
                                         another.vertices[(i + 2) % n]);
-                ans = (a == b && c == d);
+                ans = ((round(a * 1e7) == round(b * 1e7)) && round(c * 1e7) == round(d * 1e7));
                 if (!ans) break;
             }
             if (ans) break;
@@ -325,7 +327,7 @@ public:
                                         this->vertices[(n + i + 2) % n]);
                 double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
                                         another.vertices[(n - i - 2 + k) % n]);
-                ans = (a == b && c == d);
+                ans = ((round(a * 1e7) == round(b * 1e7)) && round(c * 1e7) == round(d * 1e7));
                 if (!ans) break;
             }
             if (ans) break;
@@ -346,11 +348,11 @@ public:
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
-                                        this->vertices[(i + 2) % n]);
+                        this->vertices[(i + 2) % n]);
                 double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
-                                        another.vertices[(i + 2 + k) % n]);
-                ans = ((a/b == m || m == 0) && c == d);
-                m = a/b;
+                        another.vertices[(i + 2 + k) % n]);
+                ans = ((round(a/b * 1e7) == m || m == 0) && round(c * 1e7) == round(d * 1e7));
+                m = round(a/b * 1e7);
                 if (!ans) break;
             }
             if (ans) break;
@@ -367,8 +369,8 @@ public:
                                         this->vertices[(n + i + 2) % n]);
                 double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
                                         another.vertices[(n - i - 2 + k) % n]);
-                ans = ((a/b == m || m == 0) && c == d);
-                m = a/b;
+                ans = ((round(a/b * 1e7) == m || m == 0) && round(c * 1e7) == round(d * 1e7));
+                m = round(a/b * 1e7);
                 if (!ans) break;
             }
             if (ans) break;
@@ -457,7 +459,7 @@ public:
 
 
 class Ellipse : public Shape{
-private:
+protected:
     pair <Point, Point> focs;
     double a{}, b{}, exc{};
 
@@ -474,6 +476,13 @@ public:
 
     ~Ellipse() override {
         delete &focs;
+    }
+
+    double get_a() {
+        return a;
+    }
+    double get_b() {
+        return b;
     }
 
     virtual Point center(){
@@ -526,7 +535,7 @@ public:
     }
 
     bool isSimilarTo(const Ellipse& another){
-        return (this->a / another.a == this->b / another.b &&  this->b / another.b ==
+        return (this->a / another.a == this->b / another.b && this->b / another.b ==
                 Point::dist(this->focs.first, this->focs.second) / Point::dist(another.focs.first, another.focs.second));
     }
 
@@ -566,6 +575,9 @@ public:
     Circle(const Point& A, double p){
         centr = A;
         rad = p;
+        a = rad;
+        b = rad;
+        focs = make_pair(A, A);
     }
 
     ~Circle() override{
@@ -742,3 +754,11 @@ public:
     }
 };
 
+bool operator==(Circle& c, Ellipse& el) {
+    return (c.radius() == el.get_a() && el.get_b() == c.radius() && c.center() == el.focuses().first &&
+        el.focuses().first == el.focuses().second);
+}
+
+bool operator!=(Circle& c, Ellipse& el) {
+    return !(c == el);
+}
