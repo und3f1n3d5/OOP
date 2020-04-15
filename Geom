@@ -211,6 +211,8 @@ public:
     virtual bool operator!=(const Shape& another){
         return !(*this == another);
     }
+
+    virtual ~Shape() = default;
 };
 
 class Polygon : public Shape{
@@ -228,6 +230,11 @@ public:
             vertices.push_back(p);
     }
 
+    ~Polygon() override{
+        vertices.clear();
+        vertices.shrink_to_fit();
+    }
+
     virtual int verticesCount(){
         return vertices.size();
     }
@@ -237,7 +244,29 @@ public:
     }
 
     bool operator==(const Polygon& another){
-        return this->vertices == another.vertices;
+        bool ans = (this->vertices.size() == another.vertices.size());
+        if (!ans)
+            return ans;
+        int n = this->vertices.size();
+        for (int k = 0; k < this->vertices.size(); ++k) {
+            ans = true;
+            for (size_t i = 0; i < vertices.size(); ++i) {
+                ans = ans && (this->vertices[i] == another.vertices[(i + k) % n]);
+                if (!ans) break;
+            }
+            if (ans) break;
+        }
+        if (ans) return ans;
+        ans = true;
+        for (int k = 0; k < this->vertices.size(); ++k) {
+            ans = true;
+            for (size_t i = 0; i < vertices.size(); ++i) {
+                ans = ans && (this->vertices[i] == another.vertices[(n - i + k) % n]);
+                if (!ans) break;
+            }
+            if (ans) break;
+        }
+        return ans;
     }
 
     double perimeter() override{
@@ -263,16 +292,34 @@ public:
         if (this->vertices.size() != another.vertices.size()) return false;
         int n = vertices.size();
         for (int k=0; k < n; ++k) {
+            ans = true;
             for (size_t i = 0; i < this->vertices.size(); ++i) {
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
                                         this->vertices[(i + 2) % n]);
-                double d = Point::angle(this->vertices[(i + k) % n], this->vertices[(i + 1 + k) % n],
-                                        this->vertices[(i + 2) % n]);
+                double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
+                                        another.vertices[(i + 2) % n]);
                 ans = (a == b && c == d);
                 if (!ans) break;
             }
+            if (ans) break;
+        }
+        if (ans) return ans;
+        ans = true;
+        for (int k=0; k < n; ++k) {
+            ans = true;
+            for (size_t i = 0; i < n; ++i) {
+                double a = Point::dist(this->vertices[i], this->vertices[(n + i + 1) % n]);
+                double b = Point::dist(another.vertices[(n - i + k) % n], another.vertices[(n - i + k - 1) % n]);
+                double c = Point::angle(this->vertices[i], this->vertices[(n + i + 1) % n],
+                                        this->vertices[(n + i + 2) % n]);
+                double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
+                                        another.vertices[(n - i - 2 + k) % n]);
+                ans = (a == b && c == d);
+                if (!ans) break;
+            }
+            if (ans) break;
         }
         return ans;
     }
@@ -284,8 +331,9 @@ public:
         if (this->vertices.size() != another.vertices.size()) return false;
         int n = vertices.size();
         for (int k=0; k < n; ++k) {
+            double m = 0;
+            ans = true;
             for (size_t i = 0; i < this->vertices.size(); ++i) {
-                double m = 0;
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
@@ -296,6 +344,25 @@ public:
                 m = a/b;
                 if (!ans) break;
             }
+            if (ans) break;
+        }
+        if (ans) return ans;
+        ans = true;
+        for (int k=0; k < n; ++k) {
+            double m = 0;
+            ans = true;
+            for (size_t i = 0; i < n; ++i) {
+                double a = Point::dist(this->vertices[i], this->vertices[(n + i + 1) % n]);
+                double b = Point::dist(another.vertices[(n - i + k) % n], another.vertices[(n - i + k - 1) % n]);
+                double c = Point::angle(this->vertices[i], this->vertices[(n + i + 1) % n],
+                                        this->vertices[(n + i + 2) % n]);
+                double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
+                                        another.vertices[(n - i - 2 + k) % n]);
+                ans = ((a/b == m || m == 0) && c == d);
+                m = a/b;
+                if (!ans) break;
+            }
+            if (ans) break;
         }
         return ans;
     }
@@ -366,6 +433,11 @@ public:
         vertices.push_back(D);
     }
 
+    ~Rectangle() override {
+        vertices.clear();
+        vertices.shrink_to_fit();
+    }
+
     pair<Line, Line> diagonals(){
         return make_pair(Line(vertices[0], vertices[1]), Line(vertices[1], vertices[3]));
     }
@@ -394,7 +466,11 @@ public:
         exc = sqrt(a*a - b*b)/a;
     }
 
-    virtual Point centre(){
+    ~Ellipse() override {
+        delete &focs;
+    }
+
+    virtual Point center(){
         return Point((focs.first.x + focs.second.x)/2, (focs.first.x + focs.second.x)/2);
     }
 
@@ -402,7 +478,7 @@ public:
         if (exc != 0){
             Line axis(focs.first, focs.second);
             double a1 = -axis.get_b(), b1 = axis.get_a();
-            Point c = centre();
+            Point c = center();
             double c1 = a/exc * sqrt(a1*a1 + b1*b1) - (a1*c.x + b1*c.y);
             double c2 = a/exc * sqrt(a1*a1 + b1*b1) - (a1*c.x + b1*c.y);
             return make_pair(Line(a1, b1, c1), Line(a1, b1, c2));
@@ -470,16 +546,20 @@ public:
 
 class Circle : public Ellipse{
 private:
-    Point center;
-    double rad;
+    Point centr;
+    double rad{};
 
 public:
 
     Circle() = default;
 
     Circle(const Point& A, double p){
-        center = A;
+        centr = A;
         rad = p;
+    }
+
+    ~Circle() override{
+        delete this;
     }
 
     double area() final{
@@ -490,16 +570,16 @@ public:
         return rad;
     }
 
-    Point get_centre(){
-        return center;
+    Point center() final {
+        return centr;
     }
 
     bool containsPoint(Point point) final{
-        return (rad >= Point::dist(point, center));
+        return (rad >= Point::dist(point, centr));
     }
 
     bool operator == (const Circle &another){
-        return (this->center == another.center && this->rad == another.rad);
+        return (this->centr == another.centr && this->rad == another.rad);
     }
 
     bool isCongruentTo(const Circle& another) {
@@ -511,19 +591,19 @@ public:
     }
 
     void rotate(const Point& c, double angle) final {
-        ::rotate(center, c, angle);
+        ::rotate(centr, c, angle);
     }
 
     void reflex(const Point& c) final {
-        ::reflex(center, c);
+        ::reflex(centr, c);
     }
 
     void reflex(const Line& L) final {
-        ::reflex(center, L);
+        ::reflex(centr, L);
     }
 
     void scale(const Point& c, double k) final {
-        ::scale(center, c, k);
+        ::scale(centr, c, k);
         rad = abs(k*rad);
     }
 };
@@ -544,6 +624,11 @@ public:
         vertices.push_back(A);
         vertices.push_back(B);
         vertices.push_back(C);
+    }
+
+    ~Triangle() override{
+        vertices.clear();
+        vertices.shrink_to_fit();
     }
 
     Circle circumscribedCircle(){
@@ -586,7 +671,7 @@ public:
     }
 
     Line EulerLine(){
-        Point O1 = this->orthocenter(), O2 = this->ninePointsCircle().get_centre();
+        Point O1 = this->orthocenter(), O2 = this->ninePointsCircle().center();
         return Line(O1, O2);
     }
 
@@ -619,11 +704,12 @@ public:
         vertices = vert;
     }
 
-    Square(const Point &A, const Point &C){
-        vertices.emplace_back(A);
-        vertices.emplace_back(Point(A.x, C.y));
-        vertices.emplace_back(C);
-        vertices.emplace_back(Point(C.x, A.y));
+    Square(const Point &A, const Point &C, double k=1){
+        double t = max(1/k, k);
+        double x = (A.x + k * C.x) / (1 + t), y = (A.y + k * C.y) / (1 + t);
+        Point B(x, y), D = B;
+        ::reflex(D, Point((A.x+C.x)/2, (A.y+C.y)/2));
+        vertices = {A, B, C, D};
     }
 
     Square(const Point& A, const Point& B, const Point& C, const Point& D) {
@@ -631,6 +717,11 @@ public:
         vertices.push_back(B);
         vertices.push_back(C);
         vertices.push_back(D);
+    }
+
+    ~Square() override{
+        vertices.clear();
+        vertices.shrink_to_fit();
     }
 
     Circle circumscribedCircle(){
