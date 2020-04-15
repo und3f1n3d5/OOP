@@ -27,7 +27,8 @@ struct Point{
     }
 
     static double angle(const Point& A, const Point& B, const Point& C){
-        double ax = A.x - B.x, ay = A.y - B.y, bx = C.x - B.y, by = C.y - B.y;
+        double ax = A.x - B.x, ay = A.y - B.y, bx = C.x - B.x, by = C.y - B.y;
+        if (dist(A, B) == 0 || dist(B, C) == 0) return 0;
         return acos((ax*bx + ay*by) / (dist(A, B) * dist(B, C)));
     }
 
@@ -149,7 +150,7 @@ public:
 
 void rotate(Point &p, const Point& c, double angle) {
     p = Point(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
-              c.y + (p.x - c.x)*sin(angle) - (p.y - c.y)*cos(angle));
+              c.y + (p.x - c.x)*sin(angle) + (p.y - c.y)*cos(angle));
 }
 
 void reflex(Point &p, const Point& c) {
@@ -171,7 +172,11 @@ void reflex(Point &p, Line L) {
 }
 
 void scale(Point &p, const Point& c, double k) {
-    p = Point(k * (p.x - c.x) + c.x, k * (p.y - c.y) + c.y);
+    if (k == 0){
+        p = c;
+        return;
+    }
+    if (k != 1) p = Point((k * p.x - (k - 1) * c.x), (k * p.y - c.y * (k - 1)));
 }
 
 
@@ -216,7 +221,7 @@ public:
 };
 
 class Polygon : public Shape{
-private:
+protected:
     vector <Point> vertices;
 
 public:
@@ -286,9 +291,9 @@ public:
         int n = vertices.size();
         double res = vertices[0].y * vertices[n-1].x - vertices[0].x * vertices[n-1].y;
         for (size_t i = 0; i < vertices.size() - 1; ++i){
-            res = vertices[i].x * vertices[i+1].y - vertices[i].y * vertices[i+1].x;
+            res += vertices[i].x * vertices[i+1].y - vertices[i].y * vertices[i+1].x;
         }
-        return res/2;
+        return abs(res/2);
     }
 
     bool isCongruentTo(const Polygon& another){
@@ -372,26 +377,26 @@ public:
     }
 
     void rotate(const Point& c, double angle) override {
-        for (Point p : vertices){
-            ::rotate(p, c, angle);
+        for (size_t i=0; i < vertices.size(); ++i){
+            ::rotate(vertices[i], c, angle);
         }
     }
 
     void reflex(const Point& center) override {
-        for (Point p : vertices){
-            ::reflex(p, center);
+        for (size_t i=0; i < vertices.size(); ++i){
+            ::reflex(vertices[i], center);
         }
     }
 
     void reflex(const Line& L) override {
-        for (Point p : vertices){
-            ::reflex(p, L);
+        for (size_t i=0; i < vertices.size(); ++i){
+            ::reflex(vertices[i], L);
         }
     }
 
     void scale(const Point& center, double k) override {
-        for (Point p : vertices) {
-            ::scale(p, center, k);
+        for (size_t i=0; i < vertices.size(); ++i) {
+            ::scale(vertices[i], center, k);
         }
     }
 
@@ -411,9 +416,6 @@ public:
 
 
 class Rectangle : public Polygon{
-private:
-    vector <Point> vertices;
-
 public:
 
     Rectangle() = default;
@@ -618,9 +620,6 @@ public:
 
 
 class Triangle : public Polygon{
-private:
-    vector <Point> vertices;
-
 public:
     Triangle() = default;
 
@@ -701,7 +700,7 @@ bool Polygon::containsPoint(Point point) {
 
 
 class Square : public Rectangle{
-private:
+protected:
     vector <Point> vertices;
 
 public:
