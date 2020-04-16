@@ -4,7 +4,7 @@
 
 const double INF = 1e9;
 const double PI = M_PI;
-const double PREC = 1e-7;
+const double PREC = 1e-6;
 
 using namespace std;
 
@@ -37,11 +37,11 @@ struct Point{
 
 };
 
-bool operator ==(const Point &a, const Point &b){
+bool operator==(const Point &a, const Point &b){
     return (abs(a.x - b.x) <= PREC && abs(a.y - b.y) <= PREC);
 }
 
-bool operator !=(const Point &a, const Point &b){
+bool operator!=(const Point &a, const Point &b){
     return !(a == b);
 }
 
@@ -457,12 +457,10 @@ public:
 };
 
 
-
-
 class Ellipse : public Shape{
 protected:
     pair <Point, Point> focs;
-    double a{}, b{}, exc{};
+    double a = 0, b = 0, exc = 0;
 
 public:
 
@@ -484,7 +482,7 @@ public:
         return b;
     }
 
-    virtual Point center(){
+    virtual Point center() const{
         return Point((focs.first.x + focs.second.x)/2, (focs.first.x + focs.second.x)/2);
     }
 
@@ -572,7 +570,7 @@ public:
 class Circle : public Ellipse{
 private:
     Point centr;
-    double rad{};
+    double rad = 0;
 
 public:
 
@@ -596,7 +594,7 @@ public:
         return rad;
     }
 
-    Point center() final {
+    Point center() const final {
         return centr;
     }
 
@@ -613,8 +611,9 @@ public:
     }
 
     bool operator==(const Ellipse &another) final{
+        throw exception();
         return ((abs(this->rad - another.get_a()) <= PREC && abs(another.get_b() - this->rad) <= PREC) &&
-            this->centr == another.focuses().first && another.focuses().first == another.focuses().second);
+            this->centr == another.center());
     }
 
     bool operator!=(const Ellipse &another) final{
@@ -781,8 +780,8 @@ public:
 };
 /*
 bool operator==(Circle& c, Ellipse& el) {
-    return (c.radius() == el.get_a() && el.get_b() == c.radius() && c.center() == el.focuses().first &&
-        el.focuses().first == el.focuses().second);
+    return (abs(c.radius() - el.get_a()) <= PREC && abs(el.get_b() - c.radius()) <= PREC &&
+        c.center() == el.focuses().first && el.focuses().first == el.focuses().second);
 }
 
 bool operator!=(Circle& c, Ellipse& el) {
@@ -790,8 +789,8 @@ bool operator!=(Circle& c, Ellipse& el) {
 }
 
 bool operator==(Ellipse& el, Circle& c) {
-    return (c.radius() == el.get_a() && el.get_b() == c.radius() && c.center() == el.focuses().first &&
-            el.focuses().first == el.focuses().second);
+    return (abs(c.radius() - el.get_a()) <= PREC && abs(el.get_b() - c.radius()) <= PREC
+        && c.center() == el.focuses().first && el.focuses().first == el.focuses().second);
 }
 
 bool operator!=(Ellipse& el, Circle& c) {
