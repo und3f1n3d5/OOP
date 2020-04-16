@@ -4,6 +4,7 @@
 
 const double INF = 1e9;
 const double PI = M_PI;
+const double PREC = 1e-7;
 
 using namespace std;
 
@@ -37,7 +38,7 @@ struct Point{
 };
 
 bool operator ==(const Point &a, const Point &b){
-    return (a.x == b.x && a.y == b.y);
+    return (abs(a.x - b.x) <= PREC && abs(a.y - b.y) <= PREC);
 }
 
 bool operator !=(const Point &a, const Point &b){
@@ -311,7 +312,7 @@ public:
                                         this->vertices[(i + 2) % n]);
                 double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
                                         another.vertices[(i + 2) % n]);
-                ans = ((round(a * 1e7) == round(b * 1e7)) && round(c * 1e7) == round(d * 1e7));
+                ans = ((abs(a - b) <= PREC) && abs(c - d) <= PREC);
                 if (!ans) break;
             }
             if (ans) break;
@@ -327,7 +328,7 @@ public:
                                         this->vertices[(n + i + 2) % n]);
                 double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
                                         another.vertices[(n - i - 2 + k) % n]);
-                ans = ((round(a * 1e7) == round(b * 1e7)) && round(c * 1e7) == round(d * 1e7));
+                ans = (abs(a - b) <= PREC && abs(c - d) <= PREC);
                 if (!ans) break;
             }
             if (ans) break;
@@ -351,8 +352,8 @@ public:
                         this->vertices[(i + 2) % n]);
                 double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
                         another.vertices[(i + 2 + k) % n]);
-                ans = ((round(a/b * 1e7) == m || m == 0) && round(c * 1e7) == round(d * 1e7));
-                m = round(a/b * 1e7);
+                ans = (abs(a/b - m) <= PREC || m == 0) && abs(c - d) <= PREC;
+                m = a/b;
                 if (!ans) break;
             }
             if (ans) break;
@@ -369,8 +370,8 @@ public:
                                         this->vertices[(n + i + 2) % n]);
                 double d = Point::angle(another.vertices[(n - i + k) % n], another.vertices[(n - i - 1 + k) % n],
                                         another.vertices[(n - i - 2 + k) % n]);
-                ans = ((round(a/b * 1e7) == m || m == 0) && round(c * 1e7) == round(d * 1e7));
-                m = round(a/b * 1e7);
+                ans = (abs(a/b - m) <= PREC || m == 0) && abs(c - d) <= PREC;
+                m = a/b;
                 if (!ans) break;
             }
             if (ans) break;
@@ -474,14 +475,12 @@ public:
         exc = sqrt(a*a - b*b)/a;
     }
 
-    ~Ellipse() override {
-        delete &focs;
-    }
+    ~Ellipse() override = default;
 
-    double get_a() {
+    double get_a() const{
         return a;
     }
-    double get_b() {
+    double get_b() const{
         return b;
     }
 
@@ -501,7 +500,7 @@ public:
         throw exception();
     }
 
-    virtual pair<Point,Point> focuses(){
+    virtual pair<Point,Point> focuses() const{
         return focs;
     }
 
@@ -509,7 +508,7 @@ public:
         return 4*(PI*a*b + (a-b)*(a-b)) / (a + b);
     }
 
-    double eccentricity(){
+    double eccentricity() const{
         return exc;
     }
 
@@ -521,22 +520,29 @@ public:
         return (2*a >= Point::dist(point, focs.first) + Point::dist(point, focs.second));
     }
 
-    bool operator==(const Ellipse &another){
-        return (this->focs == another.focs && this->a == another.a && this->b == another.b);
+    virtual bool operator==(const Ellipse &another){
+        return (this->focs == another.focs && abs(this->a - another.a) <= PREC &&
+            abs(this->b - another.b) <= PREC);
     }
 
-    bool operator!=(const Ellipse& another){
+    virtual bool operator!=(const Ellipse& another){
         return !(*this == another);
     }
 
-    bool isCongruentTo(const Ellipse& another) {
+    virtual bool isCongruentTo(const Ellipse& another) {
         return (this->a == another.a && this->b == another.b &&
-                Point::dist(this->focs.first, this->focs.second) == Point::dist(another.focs.first, another.focs.second));
+            abs(Point::dist(this->focs.first, this->focs.second) -
+                Point::dist(another.focs.first, another.focs.second)) <= PREC);
     }
 
-    bool isSimilarTo(const Ellipse& another){
-        return (this->a / another.a == this->b / another.b && this->b / another.b ==
-                Point::dist(this->focs.first, this->focs.second) / Point::dist(another.focs.first, another.focs.second));
+    virtual bool isSimilarTo(const Ellipse& another){
+        if (another.focuses().first == another.focuses().second){
+            return (this->focuses().first == this->focuses().second
+                && abs(this->a / another.a - this->b / another.b) <= PREC);
+        }
+        return (this->a / another.a == this->b / another.b && abs(this->b / another.b -
+            Point::dist(this->focs.first, this->focs.second) /
+                Point::dist(another.focs.first, another.focs.second)) <= PREC);
     }
 
     void rotate(const Point& c, double angle) override {
@@ -580,9 +586,7 @@ public:
         focs = make_pair(A, A);
     }
 
-    ~Circle() override{
-        delete this;
-    }
+    ~Circle() override = default;
 
     double area() final{
         return PI*rad*rad;
@@ -600,16 +604,38 @@ public:
         return (rad >= Point::dist(point, centr));
     }
 
-    bool operator == (const Circle &another){
-        return (this->centr == another.centr && this->rad == another.rad);
+    bool operator==(const Circle &another){
+        return (this->centr == another.centr && abs(this->rad - another.rad) <= PREC);
+    }
+
+    bool operator!=(const Circle &another){
+        return !(*this == another);
+    }
+
+    bool operator==(const Ellipse &another) final{
+        return ((abs(this->rad - another.get_a()) <= PREC && abs(another.get_b() - this->rad) <= PREC) &&
+            this->centr == another.focuses().first && another.focuses().first == another.focuses().second);
+    }
+
+    bool operator!=(const Ellipse &another) final{
+        return !(*this == another);
     }
 
     bool isCongruentTo(const Circle& another) {
-        return (this->rad == another.rad);
+        return (abs(this->rad - another.rad) <= PREC);
+    }
+
+    bool isCongruentTo(const Ellipse& another) final {
+        return (abs(this->rad - another.get_a()) <= PREC && abs(this->rad - another.get_b()) <= PREC &&
+            another.focuses().first == another.focuses().second);
     }
 
     bool isSimilarTo(const Circle& another) {
         return true;
+    }
+
+    bool isSimilarTo(const Ellipse& another) final {
+        return (another.focuses().first == another.focuses().second);
     }
 
     void rotate(const Point& c, double angle) final {
@@ -753,7 +779,7 @@ public:
         return c;
     }
 };
-
+/*
 bool operator==(Circle& c, Ellipse& el) {
     return (c.radius() == el.get_a() && el.get_b() == c.radius() && c.center() == el.focuses().first &&
         el.focuses().first == el.focuses().second);
@@ -762,3 +788,12 @@ bool operator==(Circle& c, Ellipse& el) {
 bool operator!=(Circle& c, Ellipse& el) {
     return !(c == el);
 }
+
+bool operator==(Ellipse& el, Circle& c) {
+    return (c.radius() == el.get_a() && el.get_b() == c.radius() && c.center() == el.focuses().first &&
+            el.focuses().first == el.focuses().second);
+}
+
+bool operator!=(Ellipse& el, Circle& c) {
+    return !(c == el);
+}//*/
