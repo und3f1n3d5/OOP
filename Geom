@@ -8,7 +8,6 @@ const double PREC = 1e-6;
 
 using namespace std;
 
-//std::precision(7);
 
 struct Point{
     double x, y;
@@ -23,6 +22,8 @@ struct Point{
     Point(double a, double b){
         x = a;
         y = b;
+        if (abs(x) < PREC) x = 0;
+        if (abs(y) < PREC) y = 0;
     }
 
     static double dist(const Point& A, const Point& B){
@@ -70,7 +71,7 @@ public:
         b = y;
         c = z;
         k = (b == 0) ? INF : -a/b;
-        p = (b == 0) ? INF : -c/a;
+        p = (b == 0) ? INF : -c/b;
     }
 
     Line(double n, double m){
@@ -119,8 +120,13 @@ public:
 
     static Point cross(const Line& L, const Line& M){
         if (is_crossing(L, M)){
-            double x = (M.k != 0) ? (L.k + L.p - M.p) / M.k : (M.k + M.p - L.p) / L.k;
-            return Point(x, L.k * x + L.p);
+            double x, y;
+            if (L.b == 0) x = -L.c / L.a;
+            else if (M.b == 0) x = -M.c / M.a;
+            else x = (M.c / M.b - L.c / L.b) / (L.a / L.b - M.a / M.b);
+            if (L.b != 0) y = L.k * x + L.p;
+            else y = M.k * x + M.p;
+            return Point(x, y);
         }
         throw exception();
     }
@@ -129,35 +135,45 @@ public:
         if (!is_crossing(L, M)){
             return 0;
         }
-        Point A(-L.c/L.a, -L.c/L.b), C(-M.c/M.a, -M.c/M.b), B = cross(L, M);
+        Point B = cross(L, M);
+        //B.x = (M.c / M.a - L.c / L.b) / (L.a / L.b - M.a / M.b);
+        double x1, y1, x2, y2;
+        if (L.a == 0) x1 = 1 + B.x;
+        else x1 = -L.b * (B.x + 1) / L.a - L.c / L.a;
+        if (L.b == 0) y1 = 1 + B.y;
+        else y1 = -L.a * (B.y + 1) / L.b - L.c / L.b;
+        if (M.a == 0) x2 = 1 + B.x;
+        else x2 = -M.b * (B.x + 1) / M.a - M.c / M.a;
+        if (M.b == 0) y2 = 1 + B.y;
+        else y2 = -M.a * (B.y + 1) / M.b - M.c / M.b;
+        Point A(x1, y1), C(x2, y2);
         return min(Point::angle(A, B, C), PI - Point::angle(A, B, C));
     }
 
     static double dist(const Point& A, const Line& L){
-        return abs(L.a*A.x + L.b*A.y + L.c) / sqrt(L.a*L.a + L.b*L.b);
+        return abs(L.a * A.x + L.b * A.y + L.c) / sqrt(L.a * L.a + L.b * L.b);
     }
 
     Point get_perp(const Point& A) {
         double x, y;
-        if (b == 0) {
-            x = -c/a;
-            y = A.y;
+        if (a == 0) {
+            y = -this->c / this->b;
+            x = A.x;
             return Point(x, y);
         }
-        y = (a * A.x - a*a/b * A.y + c) / (a*a/b + b);
-        x = A.x - a/b * (A.y - y);
-        return Point(x, y);
+        Line L(A, this->b / this->a);
+        return Line::cross(*this, L);
     }
 };
 
 
 void rotate(Point &p, const Point& c, double angle) {
-    p = Point(c.x + (p.x - c.x)*cos(angle) - (p.y - c.y)*sin(angle),
-              c.y + (p.x - c.x)*sin(angle) + (p.y - c.y)*cos(angle));
+    p = Point(c.x + (p.x - c.x) * cos(angle) - (p.y - c.y) * sin(angle),
+              c.y + (p.x - c.x) * sin(angle) + (p.y - c.y) * cos(angle));
 }
 
 void reflex(Point &p, const Point& c) {
-    p = Point(2*c.x - p.x, 2*c.y - p.y);
+    p = Point(2 * c.x - p.x, 2 * c.y - p.y);
 }
 
 void reflex(Point &p, Line L) {
@@ -169,7 +185,7 @@ void reflex(Point &p, Line L) {
     }
     else{
         x = p.x;
-        y = -(2*p.x*L.get_a()/L.get_b() + p.y);
+        y = -(2 * p.x * L.get_a() / L.get_b() + p.y);
     }
     p = Point(x, y);
 }
@@ -183,8 +199,25 @@ void scale(Point &p, const Point& c, double k) {
 }
 
 
-bool operator ==(const Line &A, const Line &B){
-    return (A.get_a() == B.get_a() && A.get_b() == B.get_b() && A.get_c() == B.get_c());
+bool operator==(const Line &L, const Line &M){
+    if (L.get_c() == 0 && L.get_b() == 0 && L.get_c() == 0) return false;
+    if (M.get_a() == 0){
+        if (M.get_c() == 0){
+            return true;
+        }
+        return abs(L.get_b() / M.get_b() - L.get_c() / M.get_c()) <= PREC;
+    }
+    if (M.get_b() == 0){
+        if (M.get_c() == 0){
+            return true;
+        }
+        return abs(L.get_a() / M.get_a() - L.get_c() / M.get_c()) <= PREC;
+    }
+    if (M.get_c() == 0){
+        return abs(L.get_b() / M.get_b() - L.get_a() / M.get_a()) <= PREC;
+    }
+    return (abs(L.get_b() / M.get_b() - L.get_a() / M.get_a()) <= PREC &&
+            abs(L.get_a() / M.get_a() - L.get_c() / M.get_c()) <= PREC);
 }
 
 bool operator !=(const Line &a, const Line &b){
@@ -349,9 +382,9 @@ public:
                 double a = Point::dist(this->vertices[i], this->vertices[(i + 1) % n]);
                 double b = Point::dist(another.vertices[(i + k) % n], another.vertices[(i + k + 1) % n]);
                 double c = Point::angle(this->vertices[i], this->vertices[(i + 1) % n],
-                        this->vertices[(i + 2) % n]);
+                                        this->vertices[(i + 2) % n]);
                 double d = Point::angle(another.vertices[(i + k) % n], another.vertices[(i + 1 + k) % n],
-                        another.vertices[(i + 2 + k) % n]);
+                                        another.vertices[(i + 2 + k) % n]);
                 ans = (abs(a/b - m) <= PREC || m == 0) && abs(c - d) <= PREC;
                 m = a/b;
                 if (!ans) break;
@@ -409,7 +442,7 @@ public:
         for (size_t i = 0; i < this->vertices.size(); ++i) {
             Line L(vertices[i], vertices[(i + 2) % n]);
             ans = ((L.get_a() * vertices[(i + 1) % n].x + L.get_b() * vertices[(i + 1) % n].y + L.get_c()) *
-                    (L.get_a() * vertices[(i + 3) % n].x + L.get_b() * vertices[(i + 3) % n].y + L.get_c()) < 0);
+                   (L.get_a() * vertices[(i + 3) % n].x + L.get_b() * vertices[(i + 3) % n].y + L.get_c()) < 0);
             if (!ans) break;
         }
         return ans;
@@ -503,7 +536,8 @@ public:
     }
 
     double perimeter() override{
-        return 4*(PI*a*b + (a-b)*(a-b)) / (a + b);
+        double c = pow((a - b) / (a + b), 2);
+        return PI * (a + b) * (1 + 3 * c / (10 + sqrt(4 - 3 * c)));
     }
 
     double eccentricity() const{
@@ -511,16 +545,16 @@ public:
     }
 
     double area() override{
-        return PI*a*b;
+        return PI * a * b;
     }
 
     bool containsPoint(Point point) override{
-        return (2*a >= Point::dist(point, focs.first) + Point::dist(point, focs.second));
+        return (2 * a >= Point::dist(point, focs.first) + Point::dist(point, focs.second));
     }
 
     virtual bool operator==(const Ellipse &another){
         return (this->focs == another.focs && abs(this->a - another.a) <= PREC &&
-            abs(this->b - another.b) <= PREC);
+                abs(this->b - another.b) <= PREC);
     }
 
     virtual bool operator!=(const Ellipse& another){
@@ -529,18 +563,18 @@ public:
 
     virtual bool isCongruentTo(const Ellipse& another) {
         return (this->a == another.a && this->b == another.b &&
-            abs(Point::dist(this->focs.first, this->focs.second) -
-                Point::dist(another.focs.first, another.focs.second)) <= PREC);
+                abs(Point::dist(this->focs.first, this->focs.second) -
+                    Point::dist(another.focs.first, another.focs.second)) <= PREC);
     }
 
     virtual bool isSimilarTo(const Ellipse& another){
         if (another.focuses().first == another.focuses().second){
             return (this->focuses().first == this->focuses().second
-                && abs(this->a / another.a - this->b / another.b) <= PREC);
+                    && abs(this->a / another.a - this->b / another.b) <= PREC);
         }
         return (this->a / another.a == this->b / another.b && abs(this->b / another.b -
-            Point::dist(this->focs.first, this->focs.second) /
-                Point::dist(another.focs.first, another.focs.second)) <= PREC);
+                                                                  Point::dist(this->focs.first, this->focs.second) /
+                                                                  Point::dist(another.focs.first, another.focs.second)) <= PREC);
     }
 
     void rotate(const Point& c, double angle) override {
@@ -613,7 +647,7 @@ public:
     bool operator==(const Ellipse &another) final{
         throw exception();
         return ((abs(this->rad - another.get_a()) <= PREC && abs(another.get_b() - this->rad) <= PREC) &&
-            this->centr == another.center());
+                this->centr == another.center());
     }
 
     bool operator!=(const Ellipse &another) final{
@@ -626,7 +660,7 @@ public:
 
     bool isCongruentTo(const Ellipse& another) final {
         return (abs(this->rad - another.get_a()) <= PREC && abs(this->rad - another.get_b()) <= PREC &&
-            another.focuses().first == another.focuses().second);
+                another.focuses().first == another.focuses().second);
     }
 
     bool isSimilarTo(const Circle& another) {
@@ -677,47 +711,56 @@ public:
 
     Circle circumscribedCircle(){
         double x, y, d;
-        Point A=vertices[0], B=vertices[1], C=vertices[2];
-        d = 2*(A.x*(B.y-C.y)+B.x*(C.y-A.y)+C.x*(A.y-B.y));
-        x = ((A.x*A.x+A.y*A.y)*(B.y-C.y) + (B.x*B.x+B.y*B.y)*(C.y-A.y) + (C.x*C.x+C.y*C.y)*(A.y-B.y)) / d;
-        y = ((A.x*A.x+A.y*A.y)*(C.x-B.x) + (B.x*B.x+B.y*B.y)*(A.x-C.x) + (C.x*C.x+C.y*C.y)*(B.x-A.x)) / d;
+        Point A = vertices[0], B = vertices[1], C = vertices[2];
+        d = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
+        x = ((A.x * A.x + A.y * A.y) * (B.y - C.y) + (B.x * B.x + B.y * B.y) * (C.y - A.y) + (C.x * C.x + C.y * C.y) * (A.y - B.y)) / d;
+        y = ((A.x * A.x + A.y * A.y) * (C.x - B.x) + (B.x * B.x + B.y * B.y) * (A.x - C.x) + (C.x * C.x + C.y * C.y) * (B.x - A.x)) / d;
         Point ctr(x, y);
         return Circle(ctr, Point::dist(ctr, A));
     }
 
     Circle inscribedCircle(){
         double r = 2 * this->area() / this->perimeter();
-        Point A=vertices[0], B=vertices[1], C=vertices[2];
-        double a = Point::dist(A, B), b = Point::dist(B, C), c = Point::dist(A, C);
+        Point A = vertices[0], B = vertices[1], C = vertices[2];
+        double a = Point::dist(C, B), b = Point::dist(A, C), c = Point::dist(A, B);
         double x, y;
-        x = (a*A.x + b*B.x + c*C.x) / (a + b + c);
-        y = (a*A.y + b*B.y + c*C.y) / (a + b + c);
+        x = (a * A.x + b * B.x + c * C.x) / (a + b + c);
+        y = (a * A.y + b * B.y + c * C.y) / (a + b + c);
         return Circle(Point(x, y), r);
     }
 
     Point centroid() {
         Point A=vertices[0], B=vertices[1], C=vertices[2];
-        return Point((A.x+B.x+C.x)/3, (A.y+B.y+C.y)/3);
+        return Point((A.x + B.x + C.x) / 3, (A.y + B.y + C.y) / 3);
     }
 
     Point orthocenter(){
         Point Ah = Line(vertices[1], vertices[2]).get_perp(vertices[0]);
-        Point Ch = Line(vertices[0], vertices[1]).get_perp(vertices[2]);
-        return Line::cross(Line(vertices[2], Ch), Line(vertices[0], Ah));
+        Point Bh = Line(vertices[1], vertices[0]).get_perp(vertices[2]);
+        Line L(vertices[2], Bh), M(vertices[0], Ah);
+        Point p =  Line::cross(L, M);
+        return p;
     }
 
     Circle ninePointsCircle(){
-        Point Am((vertices[1].x+vertices[2].x)/2, (vertices[1].y+vertices[2].y)/2);
-        Point Bm((vertices[0].x+vertices[2].x)/2, (vertices[0].y+vertices[2].y)/2);
-        Point Cm((vertices[1].x+vertices[0].x)/2, (vertices[1].y+vertices[0].y)/2);
+        Point ort = this->orthocenter();
+        Point Am((vertices[1].x + vertices[2].x) / 2, (vertices[1].y + vertices[2].y) / 2);
+        Point Bm((vertices[2].x + vertices[0].x) / 2, (vertices[2].y + vertices[0].y) / 2);
+        Point Cm((vertices[0].x + vertices[1].x) / 2, (vertices[0].y + vertices[1].y) / 2);
+        Point Am1((vertices[1].x + ort.x) / 2, (vertices[1].y + ort.y) / 2);
+        Point Bm1((vertices[2].x + ort.x) / 2, (vertices[2].y + ort.y) / 2);
+        Point Cm1((vertices[0].x + ort.x) / 2, (vertices[0].y + ort.y) / 2);
         Triangle T(Am, Bm, Cm);
-        return T.circumscribedCircle();
+        Triangle T1(Am1, Bm1, Cm1);
+        Circle c1 = T.circumscribedCircle();
+        Circle c2 = T1.circumscribedCircle();
+        return c1;
     }
 
     Line EulerLine(){
         Point O1 = this->orthocenter(), O2 = this->ninePointsCircle().center();
         return Line(O1, O2);
-    }
+    }//*/
 
     double area() final{
         double angle = sin(Point::angle(vertices[0], vertices[1], vertices[2]));
@@ -732,14 +775,11 @@ bool Polygon::containsPoint(Point point) {
         Triangle T(point, vertices[i], vertices[(i+1) % vertices.size()]);
         res += T.area();
     }
-    return res == this->area();
+    return abs(res - this->area()) <= PREC;
 }
 
 
 class Square : public Rectangle{
-protected:
-    vector <Point> vertices;
-
 public:
 
     Square() = default;
@@ -778,21 +818,3 @@ public:
         return c;
     }
 };
-/*
-bool operator==(Circle& c, Ellipse& el) {
-    return (abs(c.radius() - el.get_a()) <= PREC && abs(el.get_b() - c.radius()) <= PREC &&
-        c.center() == el.focuses().first && el.focuses().first == el.focuses().second);
-}
-
-bool operator!=(Circle& c, Ellipse& el) {
-    return !(c == el);
-}
-
-bool operator==(Ellipse& el, Circle& c) {
-    return (abs(c.radius() - el.get_a()) <= PREC && abs(el.get_b() - c.radius()) <= PREC
-        && c.center() == el.focuses().first && el.focuses().first == el.focuses().second);
-}
-
-bool operator!=(Ellipse& el, Circle& c) {
-    return !(c == el);
-}//*/
